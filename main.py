@@ -10,7 +10,6 @@ import ast
 import plotly.express as px
 import re
 from collections import Counter
-import nltk
 from nltk.corpus import stopwords
 
 # Configuration de la page en mode large
