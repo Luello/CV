@@ -224,103 +224,104 @@ elif page == "Projet NLP/LLM":
             # Appel de la fonction pour charger et visualiser les données
             load_and_visualize()
         # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
-        with tabs[2]:
-            # Charger les données
-            df = pd.read_parquet('cluster.parquet')
+        # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
+        # with tabs[2]:
+        #     # Charger les données
+        #     df = pd.read_parquet('cluster.parquet')
 
 
-            # Fonction pour récupérer les titres, albums et embeddings d'un artiste
-            def fetch_artist_lyrics(artist_name, df):
-                # Filtrer le DataFrame pour l'artiste donné
-                artist_data = df[df['artist_name'] == artist_name]
-                titles = artist_data['song_title'].tolist()
-                albums = artist_data['album_name'].tolist()
-                embeddings = artist_data['embedded_lyrics'].tolist()  # Supposant que les embeddings sont stockés sous forme de liste
+        #     # Fonction pour récupérer les titres, albums et embeddings d'un artiste
+        #     def fetch_artist_lyrics(artist_name, df):
+        #         # Filtrer le DataFrame pour l'artiste donné
+        #         artist_data = df[df['artist_name'] == artist_name]
+        #         titles = artist_data['song_title'].tolist()
+        #         albums = artist_data['album_name'].tolist()
+        #         embeddings = artist_data['embedded_lyrics'].tolist()  # Supposant que les embeddings sont stockés sous forme de liste
 
-                # Convertir les chaînes d'embeddings en listes
-                embeddings = [ast.literal_eval(embedding) if isinstance(embedding, str) else embedding for embedding in embeddings]
-                return titles, albums, embeddings
+        #         # Convertir les chaînes d'embeddings en listes
+        #         embeddings = [ast.literal_eval(embedding) if isinstance(embedding, str) else embedding for embedding in embeddings]
+        #         return titles, albums, embeddings
 
-            # Fonction pour visualiser les chansons d'un artiste
-            def visualize_artist_songs(artist_name, df, method='PCA'):
-                titles, albums, embeddings = fetch_artist_lyrics(artist_name, df)
+        #     # Fonction pour visualiser les chansons d'un artiste
+        #     def visualize_artist_songs(artist_name, df, method='PCA'):
+        #         titles, albums, embeddings = fetch_artist_lyrics(artist_name, df)
 
-                # Vérifier si les embeddings sont valides
-                if len(embeddings) == 0 or any(len(embedding) == 0 for embedding in embeddings):
-                    return ''  # Si les embeddings sont vides, on ne fait rien
+        #         # Vérifier si les embeddings sont valides
+        #         if len(embeddings) == 0 or any(len(embedding) == 0 for embedding in embeddings):
+        #             return ''  # Si les embeddings sont vides, on ne fait rien
 
-                # Convertir la liste de listes en tableau NumPy
-                embeddings_array = np.array(embeddings)
+        #         # Convertir la liste de listes en tableau NumPy
+        #         embeddings_array = np.array(embeddings)
 
-                # Réduction des dimensions
-                if method == 'PCA':
-                    reducer = PCA(n_components=2)
-                elif method == 't-SNE':
-                    reducer = TSNE(n_components=2, random_state=0)
-                else:
-                    raise ValueError("Méthode non reconnue. Utilisez 'PCA' ou 't-SNE'.")
+        #         # Réduction des dimensions
+        #         if method == 'PCA':
+        #             reducer = PCA(n_components=2)
+        #         elif method == 't-SNE':
+        #             reducer = TSNE(n_components=2, random_state=0)
+        #         else:
+        #             raise ValueError("Méthode non reconnue. Utilisez 'PCA' ou 't-SNE'.")
 
-                reduced_embeddings = reducer.fit_transform(embeddings_array)
+        #         reduced_embeddings = reducer.fit_transform(embeddings_array)
 
-                unique_albums = list(set(albums))
-                color_map = {album: i for i, album in enumerate(unique_albums)}
-                colors = [color_map[album] for album in albums]
+        #         unique_albums = list(set(albums))
+        #         color_map = {album: i for i, album in enumerate(unique_albums)}
+        #         colors = [color_map[album] for album in albums]
 
-                fig = go.Figure()
-                color_scale = px.colors.qualitative.Plotly
-                fig.add_trace(go.Scatter(
-                    x=reduced_embeddings[:, 0],
-                    y=reduced_embeddings[:, 1],
-                    mode='markers',
-                    marker=dict(
-                        size=15,
-                        color=colors,
-                        colorscale=color_scale,
-                        colorbar=dict(title='album_name'),
-                        line=dict(width=2, color='DarkSlateGrey')
-                    ),
-                ))
+        #         fig = go.Figure()
+        #         color_scale = px.colors.qualitative.Plotly
+        #         fig.add_trace(go.Scatter(
+        #             x=reduced_embeddings[:, 0],
+        #             y=reduced_embeddings[:, 1],
+        #             mode='markers',
+        #             marker=dict(
+        #                 size=15,
+        #                 color=colors,
+        #                 colorscale=color_scale,
+        #                 colorbar=dict(title='album_name'),
+        #                 line=dict(width=2, color='DarkSlateGrey')
+        #             ),
+        #         ))
 
-                # Ajouter des annotations avec des liens cliquables
-                annotations = []
-                for i, title in enumerate(titles):
-                    formatted_title = title.replace(" ", "_")
-                    annotations.append(dict(
-                        x=reduced_embeddings[i, 0],
-                        y=reduced_embeddings[i, 1],
-                        text=f'<a href="/chanson/{artist_name}/{formatted_title}/" target="_blank">{title}</a>',
-                        showarrow=True,
-                        arrowhead=2,
-                        ax=20,
-                        ay=-20,
-                        font=dict(size=10, color='black'),
-                        align='center'
-                    ))
+        #         # Ajouter des annotations avec des liens cliquables
+        #         annotations = []
+        #         for i, title in enumerate(titles):
+        #             formatted_title = title.replace(" ", "_")
+        #             annotations.append(dict(
+        #                 x=reduced_embeddings[i, 0],
+        #                 y=reduced_embeddings[i, 1],
+        #                 text=f'<a href="/chanson/{artist_name}/{formatted_title}/" target="_blank">{title}</a>',
+        #                 showarrow=True,
+        #                 arrowhead=2,
+        #                 ax=20,
+        #                 ay=-20,
+        #                 font=dict(size=10, color='black'),
+        #                 align='center'
+        #             ))
 
-                fig.update_layout(
-                    title=f'Visualisation des Embeddings des Paroles - Répertoire de {artist_name}',
-                    xaxis_title='Composante 1',
-                    yaxis_title='Composante 2',
-                    showlegend=True,
-                    template='plotly_white',
-                    width=1500,
-                    height=900,
-                    autosize=True,
-                    margin=dict(l=50, r=50, t=100, b=50),
-                    annotations=annotations
-                )
+        #         fig.update_layout(
+        #             title=f'Visualisation des Embeddings des Paroles - Répertoire de {artist_name}',
+        #             xaxis_title='Composante 1',
+        #             yaxis_title='Composante 2',
+        #             showlegend=True,
+        #             template='plotly_white',
+        #             width=1500,
+        #             height=900,
+        #             autosize=True,
+        #             margin=dict(l=50, r=50, t=100, b=50),
+        #             annotations=annotations
+        #         )
 
-                return fig
+        #         return fig
 
-            # Titre de l'application
-            st.title("Visualisation des Chansons par Artiste")
+        #     # Titre de l'application
+        #     st.title("Visualisation des Chansons par Artiste")
 
             
-            # Sélectionner l'artiste dans un sélecteur
-            artist_name = st.selectbox("Choisir un artiste", df['artist_name'].unique())
+        #     # Sélectionner l'artiste dans un sélecteur
+        #     artist_name = st.selectbox("Choisir un artiste", df['artist_name'].unique())
 
     
-            if artist_name:
-                # Visualiser les chansons de l'artiste
-                fig = visualize_artist_songs(artist_name, df, 'PCA')
-                st.plotly_chart(fig)
+        #     if artist_name:
+        #         # Visualiser les chansons de l'artiste
+        #         fig = visualize_artist_songs(artist_name, df, 'PCA')
+        #         st.plotly_chart(fig)
