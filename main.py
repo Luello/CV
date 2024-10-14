@@ -20,17 +20,17 @@ page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Projet NLP/LLM"])
 
 if page == "Accueil":
     # Utiliser les colonnes de Streamlit pour centrer les éléments
-    col1, col2, col3 = st.columns([1, 2, 1])  # Diviser l'espace en trois colonnes
-
+    col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
+    
+    with col1:
+        st.image("photo.jpg", width=250,use_column_width='always')
     with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
         # Titre
         st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
-        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br><br>', unsafe_allow_html=True)
+        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br>', unsafe_allow_html=True)
         
-        kol1, kol2, kol3, kol4 = st.columns([1, 4, 5, 5]) 
-
-        with kol3:
-            st.image("photo.jpg", width=250)
+        
+        
 
         # Description principale
         st.markdown(
@@ -44,162 +44,162 @@ if page == "Accueil":
             unsafe_allow_html=True
         )
 
-        # Créer les onglets
-        tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
+    # Créer les onglets
+    tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
 
-        # Contenu de chaque onglet
-        with tab3:
-            col1, col2 = st.columns([1,1])
-            with col1:
-                st.markdown(
-                    """
-                    <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                        <p>Quelques domaines de la Data dont les thématiques me passionnent:</p>
-                        <ul style="list-style-position: inside; text-align: left; display: inline-block;">
-                            <li>Études sociologiques et comportementales</li>
-                            <li>Analyse des Gameplays dans le sport ou les jeux vidéo</li>
-                            <li>Projets autour de la cognition et des imageries cérébrales</li>
-                            <li>Domotiques et agents intelligents</li>
-                        </ul>
-                    </div><br>
-                    """, 
-                    unsafe_allow_html=True
-                )
-            with col2:
-                st.markdown(
-                    """
-                    <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                        <p> D'autres intérêts que j'ai dans la vie : </p>
-                        <ul style="list-style-position: inside; text-align: left; display: inline-block;">
-                            <li> Escalade, Boxe, Escrime</li>
-                            <li> Cinéma, Histoire, Philosophie, Cuisine,   </li>
-                            <li> Les nouvelles technologies et leurs implications</li>
-                            <li> Jeux historiques de stratégie </li>
-                        </ul>
-                    </div><br>
-                    """, 
-                    unsafe_allow_html=True
-                )
-
-        with tab1:
+    # Contenu de chaque onglet
+    with tab3:
+        col1, col2 = st.columns([1,1])
+        with col1:
             st.markdown(
                 """
                 <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                    <p><strong>Expériences professionnelles:</strong></p>
+                    <p>Quelques domaines de la Data dont les thématiques me passionnent:</p>
                     <ul style="list-style-position: inside; text-align: left; display: inline-block;">
-                        <li><strong>Data Scientist - Marine Nationale (Tours)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Projet IA de prédiction sur une thématique RH</li>
-                                <li>Traitement, reconstitution et création de données</li>
-                                <li>Analyse BI (Dashboard QlikSense)</li>
-                                <li>Amélioration des processus Data (VBA, UIPATH, Python)</li>
-                                <li>Accompagnement structurel au traitement et à la politique des données</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Autonomie, gestion de projet, écoute des besoins, créativité, rigueur</p>
-                        </li>
-                        <br>
-                        <li><strong>Data Analyst - Gowod (Montpellier)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Analyse et visualisation sur le comportement des utilisateurs d'une application sportive</li>
-                                <li>Analyses RFM / BI, stratégies marketing</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Travail en équipe, vision marketing, appréhension d'une Base de données complexe</p>
-                        </li>
-                        <br>
-                        <li><strong>Assistant pédagogique - Lycée Marcel Sembat (Lyon)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Accompagnement pédagogique des élèves</li>
-                                <li>Projet pédagogique contre le décrochage scolaire</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, sociabilité, pédagogie, patience</p>
-                        </li>
-                        <br>
-                        <li><strong>Remplacements éducatifs - IME Pierre de Lune (Lyon)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Accompagnement quotidien d'enfants en situation d'handicap</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Patience, réactivité, Travail d'équipe, gestion de crise</p>
-                        </li>
-                        <br>
-                        <li><strong>Autres expériences constructives:</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Vendanges</li>
-                                <li>Télévente</li>
-                                <li>Rénovation d'intérieur</li>
-                                <li>Gestion d'une auberge de jeunesse</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, ténacité, curiosité</p>
-                        </li>
+                        <li>Études sociologiques et comportementales</li>
+                        <li>Analyse des Gameplays dans le sport ou les jeux vidéo</li>
+                        <li>Projets autour de la cognition et des imageries cérébrales</li>
+                        <li>Domotiques et agents intelligents</li>
                     </ul>
                 </div><br>
                 """, 
                 unsafe_allow_html=True
             )
-
-        with tab2:
-            st.markdown(
-                """
-                <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                    <p><strong>Formations :</strong></p>
-                    <ul style="list-style-position: inside; text-align: left; display: inline-block;">
-                        <li><strong>Alternance Data Scientist - Marine Nationale / WCS (2023)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Projets de Machine learning: Prédiction, Classification, Clustering, méthodes de Bagging/Boosting, modélisation de séries temporelles, méthodes ensemblistes...</li>
-                                <li>Réseaux de neurones: CNN, RNN, LSTM : Python, TensorFlow, Keras, Scikit-learn</li>
-                                <li>Outils de collaboration et de production : Git, Docker, Terminal</li>
-                                <li>Développement d'application : Django, FastAPI, CSS, HTML</li>
-                                <li>Statistiques et fondamentaux mathématiques : tests statistiques, distributions...</li>
-                                <li>Gestion de projets & Travail d'équipe</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>J'y ai validé une certification professionnelle "Concepteur Développeur d'application" (Niveau 6)</em></p>
-                        </li>
-                        <br>
-                        <li><strong>Data Analyst - WCS (Lyon - 2022)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Codage et traitement de données en Python (mon outil principal) : Pandas, NumPy, Matplotlib, Plotly, SciPy, BeautifulSoup</li>
-                                <li>Développement de différentes applications Streamlit à des fins d'analyses ou de classifications : Scikit-learn, TensorFlow, PyTorch, Streamlit, Datapane</li>
-                                <li>Spécialisation en machine learning : Projet de prédiction du vainqueur d'un duel tennistique depuis des données sur le style de jeu et l'historicité des joueurs</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Formation de 8 mois pour approfondir une base solide de la manipulation des données et de leurs analyses</em></p>
-                        </li>
-                        <br>
-                        <li style="text-align: center;"><strong>Je me spécialise à ce moment là dans la Data!</strong></li>
-                        <br>
-                        <li><strong>Master en Science politique - Enquêtes et analyse des processus politiques (Lyon - 2020)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Stage de terrain : écoute active et recueil d'éléments pour une étude</li>
-                                <li>Focales Épistémologie, Sociologie de l'action publique, expertise internationale</li>
-                                <li>Rédaction d'un mémoire de recherche de 130 pages sur le rapport au politique des éducateurs</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>M'a permis d'approfondir l'étude des processus politiques aux échelles structurelles ou individuelles, et leurs implications. Un atout significatif pour situer les acteurs, les enjeux, les institutions dans tous les contextes. Synthétiser, construire une Stratégie.</em></p>
-                        </li>
-                        <br>
-                        <li><strong>Licence en sciences cognitives, réalisée en même temps que le master en science politique (Lyon - 2020)</strong>
-                            <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Étude des mécanismes cognitifs : Mémoire, attention, langage, émotions, raisonnement, action</li>
-                                <li>Apports concrets en neuro-imagerie, plasticité cérébrale, neuroprothèses</li>
-                                <li>Programmation : cognition artificielle, Python</li>
-                            </ul>
-                            <p style="margin-left: 20px;"><em>Les apports significatifs de cette discipline émergente m'ont familiarisé avec ses enjeux, ses méthodes et ses ambitions.</em></p>
-                        </li>
-                    </ul>
-                </div><br>
-                """, 
-                unsafe_allow_html=True
-            )
-        # Contact en bas de page
-        st.markdown('<h2 style="text-align: center;">Contact</h2><br>', unsafe_allow_html=True)
-
-        # Centrer les liens et le bouton de téléchargement
-        col1, col2, col3 = st.columns([1, 2, 1])    
         with col2:
             st.markdown(
-        '<div style="text-align: center; margin-top: 20px;">'  # Ajoute un espacement au-dessus
-        '<a href="https://www.linkedin.com/in/theobcd/" style="display: block; margin-bottom: 10px;">LinkedIn</a>'  # Chaque lien sur une nouvelle ligne avec un espacement en bas
-        '<a href="https://github.com/Luello" style="display: block; margin-bottom: 10px;">GitHub</a>'  # Ajoute un espacement en bas
-        '</div>', 
-        unsafe_allow_html=True
-    )
+                """
+                <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                    <p> D'autres intérêts que j'ai dans la vie : </p>
+                    <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                        <li> Escalade, Boxe, Escrime</li>
+                        <li> Cinéma, Histoire, Philosophie, Cuisine,   </li>
+                        <li> Les nouvelles technologies et leurs implications</li>
+                        <li> Jeux historiques de stratégie </li>
+                    </ul>
+                </div><br>
+                """, 
+                unsafe_allow_html=True
+            )
+
+    with tab1:
+        st.markdown(
+            """
+            <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                <p><strong>Expériences professionnelles:</strong></p>
+                <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                    <li><strong>Data Scientist - Marine Nationale (Tours)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Projet IA de prédiction sur une thématique RH</li>
+                            <li>Traitement, reconstitution et création de données</li>
+                            <li>Analyse BI (Dashboard QlikSense)</li>
+                            <li>Amélioration des processus Data (VBA, UIPATH, Python)</li>
+                            <li>Accompagnement structurel au traitement et à la politique des données</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Autonomie, gestion de projet, écoute des besoins, créativité, rigueur</p>
+                    </li>
+                    <br>
+                    <li><strong>Data Analyst - Gowod (Montpellier)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Analyse et visualisation sur le comportement des utilisateurs d'une application sportive</li>
+                            <li>Analyses RFM / BI, stratégies marketing</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Travail en équipe, vision marketing, appréhension d'une Base de données complexe</p>
+                    </li>
+                    <br>
+                    <li><strong>Assistant pédagogique - Lycée Marcel Sembat (Lyon)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Accompagnement pédagogique des élèves</li>
+                            <li>Projet pédagogique contre le décrochage scolaire</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, sociabilité, pédagogie, patience</p>
+                    </li>
+                    <br>
+                    <li><strong>Remplacements éducatifs - IME Pierre de Lune (Lyon)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Accompagnement quotidien d'enfants en situation d'handicap</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Patience, réactivité, Travail d'équipe, gestion de crise</p>
+                    </li>
+                    <br>
+                    <li><strong>Autres expériences constructives:</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Vendanges</li>
+                            <li>Télévente</li>
+                            <li>Rénovation d'intérieur</li>
+                            <li>Gestion d'une auberge de jeunesse</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, ténacité, curiosité</p>
+                    </li>
+                </ul>
+            </div><br>
+            """, 
+            unsafe_allow_html=True
+        )
+
+    with tab2:
+        st.markdown(
+            """
+            <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                <p><strong>Formations :</strong></p>
+                <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                    <li><strong>Alternance Data Scientist - Marine Nationale / WCS (2023)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Projets de Machine learning: Prédiction, Classification, Clustering, méthodes de Bagging/Boosting, modélisation de séries temporelles, méthodes ensemblistes...</li>
+                            <li>Réseaux de neurones: CNN, RNN, LSTM : Python, TensorFlow, Keras, Scikit-learn</li>
+                            <li>Outils de collaboration et de production : Git, Docker, Terminal</li>
+                            <li>Développement d'application : Django, FastAPI, CSS, HTML</li>
+                            <li>Statistiques et fondamentaux mathématiques : tests statistiques, distributions...</li>
+                            <li>Gestion de projets & Travail d'équipe</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>J'y ai validé une certification professionnelle "Concepteur Développeur d'application" (Niveau 6)</em></p>
+                    </li>
+                    <br>
+                    <li><strong>Data Analyst - WCS (Lyon - 2022)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Codage et traitement de données en Python (mon outil principal) : Pandas, NumPy, Matplotlib, Plotly, SciPy, BeautifulSoup</li>
+                            <li>Développement de différentes applications Streamlit à des fins d'analyses ou de classifications : Scikit-learn, TensorFlow, PyTorch, Streamlit, Datapane</li>
+                            <li>Spécialisation en machine learning : Projet de prédiction du vainqueur d'un duel tennistique depuis des données sur le style de jeu et l'historicité des joueurs</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Formation de 8 mois pour approfondir une base solide de la manipulation des données et de leurs analyses</em></p>
+                    </li>
+                    <br>
+                    <ul style="text-align: center;"><strong>Je me spécialise à ce moment là dans la Data!</strong></ul>
+                    <br>
+                    <li><strong>Master en Science politique - Enquêtes et analyse des processus politiques (Lyon - 2020)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Stage de terrain : écoute active et recueil d'éléments pour une étude</li>
+                            <li>Focales Épistémologie, Sociologie de l'action publique, expertise internationale</li>
+                            <li>Rédaction d'un mémoire de recherche de 130 pages sur le rapport au politique des éducateurs</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>M'a permis d'approfondir l'étude des processus politiques aux échelles structurelles ou individuelles, et leurs implications. Un atout significatif pour situer les acteurs, les enjeux, les institutions dans tous les contextes. Synthétiser, construire une Stratégie.</em></p>
+                    </li>
+                    <br>
+                    <li><strong>Licence en sciences cognitives, réalisée en même temps que le master en science politique (Lyon - 2020)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Étude des mécanismes cognitifs : Mémoire, attention, langage, émotions, raisonnement, action</li>
+                            <li>Apports concrets en neuro-imagerie, plasticité cérébrale, neuroprothèses</li>
+                            <li>Programmation : cognition artificielle, Python</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Les apports significatifs de cette discipline émergente m'ont familiarisé avec ses enjeux, ses méthodes et ses ambitions.</em></p>
+                    </li>
+                </ul>
+            </div><br>
+            """, 
+            unsafe_allow_html=True
+        )
+        # Contact en bas de page
+    st.markdown('<br><br><br><h2 style="text-align: center;">Contact</h2>', unsafe_allow_html=True)
+
+    # Centrer les liens et le bouton de téléchargement
+    col1, col2, col3 = st.columns([1, 2, 1])    
+    with col2:
+        st.markdown(
+    '<div style="text-align: center; margin-top: 20px;">'  # Ajoute un espacement au-dessus
+    '<a href="https://www.linkedin.com/in/theobcd/" style="display: block; margin-bottom: 10px;">LinkedIn</a>'  # Chaque lien sur une nouvelle ligne avec un espacement en bas
+    '<a href="https://github.com/Luello" style="display: block; margin-bottom: 10px;">GitHub</a>'  # Ajoute un espacement en bas
+    '</div>', 
+    unsafe_allow_html=True
+)
 
     # Bouton pour télécharger le CV centré
     file_path = "CV DATA SCIENTIST- BERNAD THEO.pdf"
