@@ -38,7 +38,7 @@ if page == "Accueil":
             <div style="text-align: center; font-size: 18px; line-height: 1.6; margin-top: 20px;">
                 <p>Data Scientist passionné par les opportunités qu'offrent les progrès en IA.</p>  
                 <p>Je peux mener un projet Data du besoin métier au déploiement, dans une optique "full-stack".</p>
-                <p> Vous pouvez accéder, depuis le menu de gauche, aux différents projets que j'ai pu réalisé, et dont je déploie une partie ici.</p>
+                <p> Vous pouvez accéder, depuis le menu de gauche, aux différents projets que j'ai pu réaliser, et dont je déploie une partie ici.</p>
             </div><br>
             """, 
             unsafe_allow_html=True
@@ -95,7 +95,7 @@ if page == "Accueil":
                                 <li>Amélioration des processus Data (VBA, UIPATH, Python)</li>
                                 <li>Accompagnement structurel au traitement et à la politique des données</li>
                             </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills importants :</em> Autonomie, gestion de projet, écoute des besoins, créativité, rigueur</p>
+                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Autonomie, gestion de projet, écoute des besoins, créativité, rigueur</p>
                         </li>
                         <br>
                         <li><strong>Data Analyst - Gowod (Montpellier)</strong>
@@ -103,7 +103,7 @@ if page == "Accueil":
                                 <li>Analyse et visualisation sur le comportement des utilisateurs d'une application sportive</li>
                                 <li>Analyses RFM / BI, stratégies marketing</li>
                             </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills importants :</em> Travail en équipe, vision marketing, appréhension d'une Base de données complexe</p>
+                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Travail en équipe, vision marketing, appréhension d'une Base de données complexe</p>
                         </li>
                         <br>
                         <li><strong>Assistant pédagogique - Lycée Marcel Sembat (Lyon)</strong>
@@ -111,24 +111,24 @@ if page == "Accueil":
                                 <li>Accompagnement pédagogique des élèves</li>
                                 <li>Projet pédagogique contre le décrochage scolaire</li>
                             </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills importants :</em> Adaptabilité, sociabilité, pédagogie, patience</p>
+                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, sociabilité, pédagogie, patience</p>
                         </li>
                         <br>
                         <li><strong>Remplacements éducatifs - IME Pierre de Lune (Lyon)</strong>
                             <ul style="margin-left: 20px; list-style-type: disc;">
-                                <li>Accompagnement au quotidien d'enfants et favoriser leur intégration</li>
+                                <li>Accompagnement quotidien d'enfants en situation d'handicap</li>
                             </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills importants :</em> Patience, réactivité, Travail d'équipe, gestion de crise</p>
+                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Patience, réactivité, Travail d'équipe, gestion de crise</p>
                         </li>
                         <br>
-                        <li><strong>Petits jobs qui forgent</strong>
+                        <li><strong>Autres expériences constructives:</strong>
                             <ul style="margin-left: 20px; list-style-type: disc;">
                                 <li>Vendanges</li>
                                 <li>Télévente</li>
                                 <li>Rénovation d'intérieur</li>
                                 <li>Gestion d'une auberge de jeunesse</li>
                             </ul>
-                            <p style="margin-left: 20px;"><em>Soft Skills importants :</em> Adaptabilité, ténacité, curiosité</p>
+                            <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, ténacité, curiosité</p>
                         </li>
                     </ul>
                 </div><br>
@@ -244,10 +244,10 @@ elif page == "Projet NLP/LLM":
     </div>
 """, unsafe_allow_html=True)
     # Chargement des données
-    file_path = 'artistes.parquet'  # Assurez-vous que ce fichier existe dans le répertoire
-    df = pd.read_parquet(file_path)
+    file_path = 'artistes.parquet' 
+    df = pd.read_parquet(file_path, columns=['artist_name', 'avg_embedding'])
 
-    # Vérification que la colonne 'avg_embedding' existe
+    
     if 'avg_embedding' not in df.columns:
         st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
     else:
@@ -255,7 +255,6 @@ elif page == "Projet NLP/LLM":
         artists = df['artist_name'].tolist()
         embeddings = np.array(df['avg_embedding'].apply(ast.literal_eval).tolist())
 
-        # Onglets
         tabs = st.tabs(["Visualisation des Embeddings", "Clustering des Artistes", "Etude par Artiste"])
 
         # Onglet 1 : Visualisation des embeddings
@@ -326,11 +325,10 @@ elif page == "Projet NLP/LLM":
                 tsne = TSNE(n_components=2, random_state=0)
                 reduced_embeddings = tsne.fit_transform(embeddings)
                 
-                # Création du graphique
+                
                 fig = go.Figure()
                 color_scale = px.colors.qualitative.Plotly
 
-                # Ajouter les points au graphique
                 fig.add_trace(go.Scatter(
                     x=reduced_embeddings[:, 0],
                     y=reduced_embeddings[:, 1],
@@ -346,7 +344,7 @@ elif page == "Projet NLP/LLM":
                     hovertext=[f'Artiste: {name}<br>Cluster: {cluster}' for name, cluster in zip(artist_names, clusters)]
                 ))
 
-                # Ajouter des annotations avec des liens cliquables
+            
                 annotations = []
                 for i, artist in enumerate(artist_names):
                     artist_url = f'/{artist}/'  # URL vers la page de l'artiste
@@ -362,7 +360,7 @@ elif page == "Projet NLP/LLM":
                         align='center'
                     ))
 
-                # Configurer la mise en page du graphique
+        
                 fig.update_layout(
                     annotations=annotations,
                     title='Clustering des Artistes basés sur les Embeddings des Paroles (t-SNE)',
@@ -380,12 +378,9 @@ elif page == "Projet NLP/LLM":
                 
                 return fig
 
-            # Chargement des données et exécution du clustering et de la visualisation
-            def load_and_visualize():
-                file_path = 'artistes.parquet'  # Assurez-vous que ce fichier existe dans le répertoire
-                df = pd.read_parquet(file_path)
-
-                # Vérification que la colonne 'avg_embedding' existe
+       
+            def load_and_visualize(df):
+         
                 if 'avg_embedding' not in df.columns:
                     st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
                     return
@@ -402,7 +397,7 @@ elif page == "Projet NLP/LLM":
                 st.plotly_chart(fig, use_container_width=True)
 
             # Appel de la fonction pour charger et visualiser les données
-            load_and_visualize()
+            load_and_visualize(df)
         # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
         # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
         with tabs[2]:
