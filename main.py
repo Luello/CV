@@ -25,32 +25,28 @@ if page == "Accueil":
 
     with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
         # Titre
-        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1>', unsafe_allow_html=True)
+        st.markdown('<h1 style="text-align: center;"> Bienvenue sur mon CV numérique :)</h1>', unsafe_allow_html=True)
 
 
         img_col1, img_col2, img_col3 = st.columns([1, 2, 1])
+
+        with img_col1:
+            st.title("Théo Bernad")
         with img_col2:
-            st.image("photo.jpg", width=300)
+            
+            st.image("photo.jpg", width=350)
 
 
 
         # Résumé
         st.markdown("""
         <div style="text-align: center;">
-        ## Profil
-        Data Scientist passionné par l'analyse des données et le machine learning. 
-        Fort d'une expérience dans la création de modèles prédictifs et la visualisation de données.
+        ## Data Scientist passionné par les opportunités qu'offrent les progrès en IA.  
+        Fort d'une expérience au sein de la Marine Nationale, je sais mener un projet Data du besoin métier au déploiement.
         </div>
         """, unsafe_allow_html=True)
 
-        # Compétences
-        st.markdown("""
-        <div style="text-align: center;">## Compétences"</div>
-        """)
-        st.markdown("- Python")
-        st.markdown("- Machine Learning")
-        st.markdown("- Data Visualization")
-        st.markdown("- Statistiques")
+    
 
         # Contact
         st.markdown("## Contact")
