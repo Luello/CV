@@ -19,6 +19,7 @@ st.set_page_config(layout="wide")
 page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Projet NLP/LLM"])
 
 if page == "Accueil":
+    st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
     # Utiliser les colonnes de Streamlit pour centrer les éléments
     col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
     
@@ -26,7 +27,7 @@ if page == "Accueil":
         st.image("photo.jpg", width=250,use_column_width='always')
     with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
         # Titre
-        st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
+        
         st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br>', unsafe_allow_html=True)
         
         
