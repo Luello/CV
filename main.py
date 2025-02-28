@@ -48,7 +48,7 @@ text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></di
 """
 
     
-    st.markdown(infogram_iframe, unsafe_allow_html=True)
+    st.components.v1.html(infogram_html, height=800, scrolling=True)
     
     # Ajout du crédit Infogram (facultatif)
     st.markdown(
