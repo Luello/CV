@@ -16,8 +16,28 @@ from collections import Counter
 st.set_page_config(layout="wide")
 
 # Panneau latéral
-page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Projet NLP/LLM"])
+page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Visualisations", "Projet NLP/LLM"])
+if page== "Visualisations":
+    st.title("📊 Visualisations")
 
+    # Intégration de l'iframe Infogram
+    infogram_iframe = """
+    <iframe src="https://e.infogram.com/8b9c87b0-eb40-4411-927d-1141a21b8c59?src=embed" 
+    title="" width="700" height="10146" scrolling="no" frameborder="0" 
+    style="border:none;" allowfullscreen="allowfullscreen"></iframe>
+    """
+    
+    st.markdown(infogram_iframe, unsafe_allow_html=True)
+    
+    # Ajout du crédit Infogram (facultatif)
+    st.markdown(
+        '<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;'
+        'line-height:15px!important;text-align:center;border-top:1px solid #dadada;'
+        'margin:0 30px;width: 640px">'
+        '<br><a href="https://infogram.com" style="color:#989898!important;'
+        'text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>',
+        unsafe_allow_html=True
+    )
 if page == "Accueil":
     st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
     # Utiliser les colonnes de Streamlit pour centrer les éléments
