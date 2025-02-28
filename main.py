@@ -21,11 +21,32 @@ if page== "Visualisations":
     st.title("📊 Visualisations")
 
     # Intégration de l'iframe Infogram
-    infogram_iframe = """
-    <iframe src="https://e.infogram.com/8b9c87b0-eb40-4411-927d-1141a21b8c59?src=embed" 
-    title="" width="700" height="10146" scrolling="no" frameborder="0" 
-    style="border:none;" allowfullscreen="allowfullscreen"></iframe>
-    """
+    infogram_html = """
+<div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
+     data-type="interactive" data-title=""></div>
+<script>
+!function(e,n,i,s){
+    var d="InfogramEmbeds";
+    var o=e.getElementsByTagName(n)[0];
+    if(window[d] && window[d].initialized) {
+        window[d].process && window[d].process();
+    } else if(!e.getElementById(i)){
+        var r=e.createElement(n);
+        r.async=1;
+        r.id=i;
+        r.src=s;
+        o.parentNode.insertBefore(r,o);
+    }
+}(document,"script","infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");
+</script>
+
+<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;
+line-height:15px!important;text-align:center;border-top:1px solid #dadada;
+margin:0 30px">
+<br><a href="https://infogram.com" style="color:#989898!important;
+text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>
+"""
+
     
     st.markdown(infogram_iframe, unsafe_allow_html=True)
     
