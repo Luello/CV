@@ -301,68 +301,69 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     """)
 
     # Chargement des données
-    df = pd.read_csv("results_df.csv")
-    df = df.dropna(subset=["title", "charge_politique_latente"]).reset_index(drop=True)
-
-    # Conversion des colonnes de listes depuis string (si nécessaire)
-    list_cols = [
-        "style_de_politisation",
-        "figures_ennemies",
-        "valeurs_invoquées",
-        "thématiques_dominantes"
-    ]
-
-    for col in list_cols:
-        df[col] = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else [])
-
-    # Colonnes numériques à inclure
-    numerical_cols = ["charge_politique_latente", "index_fanatisme"]
-
-    # Encodage MultiLabel
-    encoded_parts = []
-    for col in list_cols:
-        mlb = MultiLabelBinarizer()
-        try:
-            binarized = mlb.fit_transform(df[col])
-            encoded_df = pd.DataFrame(binarized, columns=[f"{col}__{c}" for c in mlb.classes_])
-            encoded_parts.append(encoded_df)
-        except Exception as e:
-            st.warning(f"Problème d'encodage pour {col} : {e}")
-
-    # Construction de la matrice finale
-    X_num = df[numerical_cols].fillna(0).reset_index(drop=True)
-    X_cat = pd.concat(encoded_parts, axis=1).reset_index(drop=True)
-    X_all = pd.concat([X_num, X_cat], axis=1)
-
-    # Normalisation
-    X_scaled = StandardScaler().fit_transform(X_all)
-
-    # UMAP
-    umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
-    embedding = umap.fit_transform(X_scaled)
-
-    # DataFrame pour visualisation
-    df_visu = pd.DataFrame({
-        "x": embedding[:, 0],
-        "y": embedding[:, 1],
-        "title": df["title"],
-        "charge_politique_latente": df["charge_politique_latente"]
-    })
-
-    # Graphique Plotly
-    fig = px.scatter(
-        df_visu,
-        x="x", y="y",
-        text="title",
-        color="charge_politique_latente",
-        color_continuous_scale="RdBu_r",
-        hover_name="title",
-        title="Projection UMAP des chaînes (gradient = charge politique latente)"
-    )
-    fig.update_traces(textposition='top center')
-    fig.update_layout(height=700)
-
-    st.plotly_chart(fig, use_container_width=True)
+    with st.spinner("⏳ Patientez quelques secondes le temps que le graphique charge :)"):
+        df = pd.read_csv("results_df.csv")
+        df = df.dropna(subset=["title", "charge_politique_latente"]).reset_index(drop=True)
+    
+        # Conversion des colonnes de listes depuis string (si nécessaire)
+        list_cols = [
+            "style_de_politisation",
+            "figures_ennemies",
+            "valeurs_invoquées",
+            "thématiques_dominantes"
+        ]
+    
+        for col in list_cols:
+            df[col] = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else [])
+    
+        # Colonnes numériques à inclure
+        numerical_cols = ["charge_politique_latente", "index_fanatisme"]
+    
+        # Encodage MultiLabel
+        encoded_parts = []
+        for col in list_cols:
+            mlb = MultiLabelBinarizer()
+            try:
+                binarized = mlb.fit_transform(df[col])
+                encoded_df = pd.DataFrame(binarized, columns=[f"{col}__{c}" for c in mlb.classes_])
+                encoded_parts.append(encoded_df)
+            except Exception as e:
+                st.warning(f"Problème d'encodage pour {col} : {e}")
+    
+        # Construction de la matrice finale
+        X_num = df[numerical_cols].fillna(0).reset_index(drop=True)
+        X_cat = pd.concat(encoded_parts, axis=1).reset_index(drop=True)
+        X_all = pd.concat([X_num, X_cat], axis=1)
+    
+        # Normalisation
+        X_scaled = StandardScaler().fit_transform(X_all)
+    
+        # UMAP
+        umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
+        embedding = umap.fit_transform(X_scaled)
+    
+        # DataFrame pour visualisation
+        df_visu = pd.DataFrame({
+            "x": embedding[:, 0],
+            "y": embedding[:, 1],
+            "title": df["title"],
+            "charge_politique_latente": df["charge_politique_latente"]
+        })
+    
+        # Graphique Plotly
+        fig = px.scatter(
+            df_visu,
+            x="x", y="y",
+            text="title",
+            color="charge_politique_latente",
+            color_continuous_scale="RdBu_r",
+            hover_name="title",
+            title="Projection UMAP des chaînes (gradient = charge politique latente)"
+        )
+        fig.update_traces(textposition='top center')
+        fig.update_layout(height=700)
+    
+        st.plotly_chart(fig, use_container_width=True)
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
@@ -394,163 +395,163 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
     file_path = 'artistes.parquet' 
     df = pd.read_parquet(file_path, columns=['artist_name', 'avg_embedding'])
 
+    with st.spinner("⏳ Patientez quelques secondes le temps que le graphique charge :)"):
+        if 'avg_embedding' not in df.columns:
+            st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
+        else:
+            # Extraction des noms d'artistes et des embeddings
+            artists = df['artist_name'].tolist()
+            embeddings = np.array(df['avg_embedding'].apply(ast.literal_eval).tolist())
     
-    if 'avg_embedding' not in df.columns:
-        st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
-    else:
-        # Extraction des noms d'artistes et des embeddings
-        artists = df['artist_name'].tolist()
-        embeddings = np.array(df['avg_embedding'].apply(ast.literal_eval).tolist())
-
-        tabs = st.tabs(["Visualisation des Embeddings", "Clustering des Artistes", "Etude par Artiste"])
-
-        # Onglet 1 : Visualisation des embeddings
-        with tabs[0]:
-            # Visualisation avec t-SNE
-            def generate_espace_artistes():
-                reducer = TSNE(n_components=2, random_state=0)
-                reduced_embeddings = reducer.fit_transform(embeddings)
-
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    x=reduced_embeddings[:, 0],
-                    y=reduced_embeddings[:, 1],
-                    mode='markers',
-                    marker=dict(size=8, color='blue'),
-                    text=artists,
-                    textposition='top center',
-                    hoverinfo='none'
-                ))
-
-                for i, artist in enumerate(artists):
-                    artist_url = f'/{artist}/'
-                    fig.add_annotation(
-                        x=reduced_embeddings[i, 0],
-                        y=reduced_embeddings[i, 1],
-                        text=f'<a href="{artist_url}" target="_blank">{artist}</a>',
-                        showarrow=True,
-                        arrowhead=2,
-                        ax=20,
-                        ay=-20,
-                        font=dict(size=10, color='blue'),
-                        align='center'
-                    )
-
-                fig.update_layout(
-                    autosize=True,
-                    width=1800,
-                    height=800,
-                    title='Visualisation des Embeddings des Artistes avec Embeddings Moyens',
-                    template='plotly_white',
-                    margin=dict(l=50, r=50, t=100, b=50),
-                    xaxis=dict(showgrid=True, zeroline=False),
-                    yaxis=dict(showgrid=True, zeroline=False)
-                )
-
-                return fig
-
-            fig = generate_espace_artistes()
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Onglet 2 : Clustering des artistes
-        with tabs[1]:
-            st.write("Ce second graphique est le même que le premier, mais met en avant différents clusters, c'est à dire des groupements d'éléments semblables au regard des autres. On retrouve les différentes segmentations que l'on présentais, et même une segmentation au sein même du groupe des rappeurs")
-            def cluster_artists(artist_vectors, n_clusters=5):
-                """Clustering des artistes en utilisant les vecteurs de leurs paroles."""
-                artist_names = list(artist_vectors.keys())
-                embeddings = np.array(list(artist_vectors.values()))
-                
-                kmeans = KMeans(n_clusters=n_clusters, random_state=0)
-                clusters = kmeans.fit_predict(embeddings)
-                
-                return artist_names, embeddings, clusters
-
-            # Fonction pour visualiser les clusters en utilisant t-SNE
-            def visualize_clusters_with_tsne(artist_names, embeddings, clusters):
-                """Visualiser les clusters d'artistes avec t-SNE."""
-                # Réduction de dimensionnalité avec t-SNE
-                tsne = TSNE(n_components=2, random_state=0)
-                reduced_embeddings = tsne.fit_transform(embeddings)
-                
-                
-                fig = go.Figure()
-                color_scale = px.colors.qualitative.Plotly
-
-                fig.add_trace(go.Scatter(
-                    x=reduced_embeddings[:, 0],
-                    y=reduced_embeddings[:, 1],
-                    mode='markers',
-                    marker=dict(
-                        size=12,
-                        color=clusters,
-                        colorscale=color_scale,
-                        colorbar=None,
-                        line=dict(width=2, color='DarkSlateGrey')
-                    ),
-                    hoverinfo='text',
-                    hovertext=[f'Artiste: {name}<br>Cluster: {cluster}' for name, cluster in zip(artist_names, clusters)]
-                ))
-
-            
-                annotations = []
-                for i, artist in enumerate(artist_names):
-                    artist_url = f'/{artist}/'  # URL vers la page de l'artiste
-                    annotations.append(dict(
-                        x=reduced_embeddings[i, 0],
-                        y=reduced_embeddings[i, 1],
-                        text=f'<a href="{artist_url}" target="_blank">{artist}</a>',
-                        showarrow=True,
-                        arrowhead=2,
-                        ax=20,
-                        ay=-20,
-                        font=dict(size=10, color='blue'),
-                        align='center'
+            tabs = st.tabs(["Visualisation des Embeddings", "Clustering des Artistes", "Etude par Artiste"])
+    
+            # Onglet 1 : Visualisation des embeddings
+            with tabs[0]:
+                # Visualisation avec t-SNE
+                def generate_espace_artistes():
+                    reducer = TSNE(n_components=2, random_state=0)
+                    reduced_embeddings = reducer.fit_transform(embeddings)
+    
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=reduced_embeddings[:, 0],
+                        y=reduced_embeddings[:, 1],
+                        mode='markers',
+                        marker=dict(size=8, color='blue'),
+                        text=artists,
+                        textposition='top center',
+                        hoverinfo='none'
                     ))
-
-        
-                fig.update_layout(
-                    annotations=annotations,
-                    title='Clustering des Artistes basés sur les Embeddings des Paroles (t-SNE)',
-                    xaxis_title='Composante 1',
-                    yaxis_title='Composante 2',
-                    showlegend=False,
-                    template='plotly_white',
-                    width=1800,
-                    height=1000,
-                    autosize=True,
-                    margin=dict(l=50, r=50, t=100, b=50),
-                    xaxis=dict(showgrid=True, zeroline=False),
-                    yaxis=dict(showgrid=True, zeroline=False)
-                )
-                
-                return fig
-
-       
-            def load_and_visualize(df):
-         
-                if 'avg_embedding' not in df.columns:
-                    st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
-                    return
-
-                # Extraction des artistes et des embeddings
-                artist_vectors = {row['artist_name']: ast.literal_eval(row['avg_embedding']) for index, row in df.iterrows()}
-                
-                # Appliquer le clustering
-                n_clusters = 5  # Nombre de clusters
-                artist_names, embeddings, clusters = cluster_artists(artist_vectors, n_clusters)
-                
-                # Visualiser les clusters
-                fig = visualize_clusters_with_tsne(artist_names, embeddings, clusters)
+    
+                    for i, artist in enumerate(artists):
+                        artist_url = f'/{artist}/'
+                        fig.add_annotation(
+                            x=reduced_embeddings[i, 0],
+                            y=reduced_embeddings[i, 1],
+                            text=f'<a href="{artist_url}" target="_blank">{artist}</a>',
+                            showarrow=True,
+                            arrowhead=2,
+                            ax=20,
+                            ay=-20,
+                            font=dict(size=10, color='blue'),
+                            align='center'
+                        )
+    
+                    fig.update_layout(
+                        autosize=True,
+                        width=1800,
+                        height=800,
+                        title='Visualisation des Embeddings des Artistes avec Embeddings Moyens',
+                        template='plotly_white',
+                        margin=dict(l=50, r=50, t=100, b=50),
+                        xaxis=dict(showgrid=True, zeroline=False),
+                        yaxis=dict(showgrid=True, zeroline=False)
+                    )
+    
+                    return fig
+    
+                fig = generate_espace_artistes()
                 st.plotly_chart(fig, use_container_width=True)
 
-            # Appel de la fonction pour charger et visualiser les données
-            load_and_visualize(df)
-        # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
-        # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
-        with tabs[2]:
-            st.write("Cette section est encore en déploiement car elle implique un chargement trop long pour le moment ! ")
-        #     # Charger les données
-        #     df = pd.read_parquet('cluster.parquet')
+            # Onglet 2 : Clustering des artistes
+            with tabs[1]:
+                st.write("Ce second graphique est le même que le premier, mais met en avant différents clusters, c'est à dire des groupements d'éléments semblables au regard des autres. On retrouve les différentes segmentations que l'on présentais, et même une segmentation au sein même du groupe des rappeurs")
+                def cluster_artists(artist_vectors, n_clusters=5):
+                    """Clustering des artistes en utilisant les vecteurs de leurs paroles."""
+                    artist_names = list(artist_vectors.keys())
+                    embeddings = np.array(list(artist_vectors.values()))
+                    
+                    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+                    clusters = kmeans.fit_predict(embeddings)
+                    
+                    return artist_names, embeddings, clusters
+    
+                # Fonction pour visualiser les clusters en utilisant t-SNE
+                def visualize_clusters_with_tsne(artist_names, embeddings, clusters):
+                    """Visualiser les clusters d'artistes avec t-SNE."""
+                    # Réduction de dimensionnalité avec t-SNE
+                    tsne = TSNE(n_components=2, random_state=0)
+                    reduced_embeddings = tsne.fit_transform(embeddings)
+                    
+                    
+                    fig = go.Figure()
+                    color_scale = px.colors.qualitative.Plotly
+    
+                    fig.add_trace(go.Scatter(
+                        x=reduced_embeddings[:, 0],
+                        y=reduced_embeddings[:, 1],
+                        mode='markers',
+                        marker=dict(
+                            size=12,
+                            color=clusters,
+                            colorscale=color_scale,
+                            colorbar=None,
+                            line=dict(width=2, color='DarkSlateGrey')
+                        ),
+                        hoverinfo='text',
+                        hovertext=[f'Artiste: {name}<br>Cluster: {cluster}' for name, cluster in zip(artist_names, clusters)]
+                    ))
+    
+                
+                    annotations = []
+                    for i, artist in enumerate(artist_names):
+                        artist_url = f'/{artist}/'  # URL vers la page de l'artiste
+                        annotations.append(dict(
+                            x=reduced_embeddings[i, 0],
+                            y=reduced_embeddings[i, 1],
+                            text=f'<a href="{artist_url}" target="_blank">{artist}</a>',
+                            showarrow=True,
+                            arrowhead=2,
+                            ax=20,
+                            ay=-20,
+                            font=dict(size=10, color='blue'),
+                            align='center'
+                        ))
+    
+            
+                    fig.update_layout(
+                        annotations=annotations,
+                        title='Clustering des Artistes basés sur les Embeddings des Paroles (t-SNE)',
+                        xaxis_title='Composante 1',
+                        yaxis_title='Composante 2',
+                        showlegend=False,
+                        template='plotly_white',
+                        width=1800,
+                        height=1000,
+                        autosize=True,
+                        margin=dict(l=50, r=50, t=100, b=50),
+                        xaxis=dict(showgrid=True, zeroline=False),
+                        yaxis=dict(showgrid=True, zeroline=False)
+                    )
+                    
+                    return fig
+    
+           
+                def load_and_visualize(df):
+             
+                    if 'avg_embedding' not in df.columns:
+                        st.error('La colonne avg_embedding n\'existe pas dans le DataFrame.')
+                        return
+    
+                    # Extraction des artistes et des embeddings
+                    artist_vectors = {row['artist_name']: ast.literal_eval(row['avg_embedding']) for index, row in df.iterrows()}
+                    
+                    # Appliquer le clustering
+                    n_clusters = 5  # Nombre de clusters
+                    artist_names, embeddings, clusters = cluster_artists(artist_vectors, n_clusters)
+                    
+                    # Visualiser les clusters
+                    fig = visualize_clusters_with_tsne(artist_names, embeddings, clusters)
+                    st.plotly_chart(fig, use_container_width=True)
+    
+                # Appel de la fonction pour charger et visualiser les données
+                load_and_visualize(df)
+            # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
+            # Onglet 3 : Autre contenu (ajoutez ici ce que vous souhaitez)
+            with tabs[2]:
+                st.write("Cette section est encore en déploiement car elle implique un chargement trop long pour le moment ! ")
+            #     # Charger les données
+            #     df = pd.read_parquet('cluster.parquet')
 
 
         #     # Fonction pour récupérer les titres, albums et embeddings d'un artiste
