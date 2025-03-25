@@ -16,9 +16,13 @@ from collections import Counter
 st.set_page_config(layout="wide")
 
 # Panneau latéral
-page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Visualisations", "Projet NLP/LLM"])
-if page== "Visualisations réalisées avec les données Data.gouv sur les accidents routiers.":
-    st.title("📊 V")
+page = st.sidebar.radio("📁 Navigation :", [
+    "🏠 Accueil",
+    "📈 Démo - Visualisations",
+    "🧠 NLP/LLM"
+])
+if page== "📈 Démo - Visualisations":
+    st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
 
     # Intégration de l'iframe Infogram
     infogram_html = """
@@ -59,7 +63,7 @@ text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></di
         'text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>',
         unsafe_allow_html=True
     )
-if page == "Accueil":
+if page == "🏠 Accueil":
     st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
     # Utiliser les colonnes de Streamlit pour centrer les éléments
     col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
@@ -258,7 +262,7 @@ if page == "Accueil":
     except FileNotFoundError:
         st.error("Le fichier n'a pas été trouvé. Vérifiez le chemin et le nom du fichier.")
 
-elif page == "Projet NLP/LLM":
+elif page == "🧠 NLP/LLM":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
         <p><strong>Présentation du projet :</strong></p>
