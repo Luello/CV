@@ -286,12 +286,7 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     import plotly.express as px
     import streamlit as st
     import ast
-
-    st.title("📊 Projection UMAP des chaînes YouTube selon leur identité politique")
-
-  import pandas as pd
-import streamlit as st
-descripteurs = [
+    descripteurs = [
     ("format_detecte", "Type précis de vidéo", "débat, vlog, podcast, analyse politique…"),
     ("ton_general", "Ton dominant du discours", "neutre, polémique, académique, humoristique…"),
     ("registre_discursif", "Type discursif", "explicatif, militant, scientifique, complotiste…"),
@@ -324,36 +319,39 @@ descripteurs = [
     ("index_performativite", "Performativité", "0 = descriptif, 100 = incitation forte à l’action"),
     ("index_fanatisme", "Fermeté idéologique", "0 = ouvert au débat, 100 = hostile aux avis opposés")
 ]
-
-st.markdown("""
-### 🧠 Objectif
-
-Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
-
-Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
-
-Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descripteurs discursifs, idéologiques et narratifs**.
-""")
-
-# Construction du tableau descripteurs
+    st.title("📊 Projection UMAP des chaînes YouTube selon leur identité politique")
 
 
-df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
-st.dataframe(df_descr)
-# Encapsuler proprement
-
-# Démarche analytique
-st.markdown("""
----
-
-### ⚙️ Démarche analytique
-
-- Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées via `StandardScaler`.
-- Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées avec `MultiLabelBinarizer`.
-- Ces vecteurs sont projetés dans un plan 2D avec `UMAP` (distance *cosine*), ce qui permet d’observer des proximités idéologiques latentes.
-
-🎨 Le **gradient de couleur** représente la politisation : plus il est élevé, plus le discours est marqué politiquement.
-""")
+    
+    st.markdown("""
+    ### 🧠 Objectif
+    
+    Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
+    
+    Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
+    
+    Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descripteurs discursifs, idéologiques et narratifs**.
+    """)
+    
+    # Construction du tableau descripteurs
+    
+    
+    df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
+    st.dataframe(df_descr)
+    # Encapsuler proprement
+    
+    # Démarche analytique
+    st.markdown("""
+    ---
+    
+    ### ⚙️ Démarche analytique
+    
+    - Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées via `StandardScaler`.
+    - Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées avec `MultiLabelBinarizer`.
+    - Ces vecteurs sont projetés dans un plan 2D avec `UMAP` (distance *cosine*), ce qui permet d’observer des proximités idéologiques latentes.
+    
+    🎨 Le **gradient de couleur** représente la politisation : plus il est élevé, plus le discours est marqué politiquement.
+    """)
 
     # Chargement des données
     with st.spinner("⏳ Patientez quelques secondes le temps que le graphique charge :)"):
