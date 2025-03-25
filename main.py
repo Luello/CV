@@ -37,6 +37,7 @@ page = st.sidebar.radio("📁 Navigation :", [
     "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
 ])
 if page== "📈 Démo - Visualisations":
+    st.markdown("![Alt Text](cluster.gif)")
     st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
 
     # Intégration de l'iframe Infogram
