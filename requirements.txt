@@ -110,3 +110,5 @@ urllib3==2.2.3
 watchdog==5.0.3
 wcwidth==0.2.13
 wrapt==1.16.0
+umap-learn==0.5.5
+
