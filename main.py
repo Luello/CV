@@ -11,7 +11,21 @@ import plotly.express as px
 import re
 from collections import Counter
 
+st.markdown("""
+    <style>
+        /* Agrandir le texte dans les boutons radio de la sidebar */
+        section[data-testid="stSidebar"] .stRadio > label {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
 
+        /* Bonus : icônes emoji un peu plus espacées */
+        section[data-testid="stSidebar"] .stRadio div {
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 # Configuration de la page en mode large
 st.set_page_config(layout="wide")
 
