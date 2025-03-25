@@ -37,7 +37,15 @@ page = st.sidebar.radio("📁 Navigation :", [
     "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
 ])
 if page== "📈 Démo - Visualisations":
-    st.markdown("![Alt Text](cluster.gif)")
+    file_ = open("cluster.gif", "rb")
+    contents = file_.read()
+    data_url = base64.b64encode(contents).decode("utf-8")
+    file_.close()
+    
+    st.markdown(
+        f'<img src="data:image/gif;base64,{data_url}" alt="cat gif">',
+        unsafe_allow_html=True,
+    )
     st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
 
     # Intégration de l'iframe Infogram
