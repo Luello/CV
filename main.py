@@ -291,6 +291,41 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
 
     st.markdown("""
     Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
+    Ce graphique illustre comment une analyse NLP peut cumuler analyse quantitative et qualitative afin d'appréhender un phénomène politique. Ici, un LLM passe sur le scripte des vidéos des chaînes youtubes, 
+    et renvoie différentes caractéristiques qualitatives:
+      "format_detecte": "Type précis de vidéo (débat, vlog, réaction, podcast, analyse politique, reportage...)",
+      "ton_general": "Ton dominant du discours (neutre, polémique, académique, humoristique...)",
+      "registre_discursif": "Type dominant du discours (explicatif, militant, scientifique, complotiste...)",
+      "stratégie_argumentative": "Méthode dominante utilisée pour convaincre (démonstratif, émotionnel, narratif...)",
+      "structure_narrative": "Organisation narrative (linéaire, chaotique, récurrente...)",
+      "style_de_politisation": "Façon dominante d'intégrer la politique (rationnel, affectif, moraliste...)",
+      "valeurs_invoquées": ["Liste précise des valeurs principales évoquées"],
+      "thématiques_dominantes": ["Liste des thèmes politiques ou sociaux principaux abordés"],
+      "cibles_implicites": ["Groupes ou entités ciblés par des critiques implicites ou explicites"],
+      "références_implicites": ["Références culturelles, historiques ou philosophiques implicites mentionnées"],
+      "axe_latent": ["Cadres idéologiques sous-jacents du discours (souverainisme, technocratie, socialisme...)",],
+      "conception_du_nous": "Entité collective valorisée (peuple, nation, individus, communauté...)",
+      "positionnement_sociétal": "Position face à la société (critique des élites, défense d'un groupe, universaliste...)",
+      "cadre_problematisation": "Façon dominante de problématiser les enjeux abordés",
+      "figures_ennemies": ["Figures ou entités explicitement ou implicitement présentées comme adversaires"],
+      "récit_idéologique": ["Éléments du récit idéologique principal"],
+      "axes_de_tension": ["Principaux axes de tension soulignés"],
+      "paradigmes_compatibles": ["Paradigmes politiques ou idéologiques compatibles avec le discours analysé"],
+      "ton_politique": "Ton spécifiquement politique du discours (engagé, distant, militant...)",
+      "enjeux_sociaux_centrés": ["Enjeux sociaux centraux mis en avant"],
+      "charge_politique_latente": Score sur 100 (0=neutre, 100=très politisé),
+      "position_stratégique": "Position stratégique adoptée dans le discours (offensive, défensive, neutre...)",
+      "mode_d_interpellation_du_public": "Façon dont le public est interpellé (direct, indirect, pédagogique...)",
+      "figure_du_locuteur": "Rôle que prend l'auteur dans son discours (expert, citoyen ordinaire, leader...)",
+      "échelle_de_politisation": "Échelle de politisation (locale, nationale, internationale...)",
+      "type_de_menace_perçue": "Type principal de menace évoquée ou perçue",
+      "registre_moral_implicite": "Registre moral sous-jacent (progressiste, conservateur, égalitariste...)",
+      "ton_affectif_dominant": "Émotion dominante dans le discours (colère, peur, espoir...)",
+      "niveau_de_certitude": Score sur 100 (0=incertain, 100=très confiant),
+      "index_performativite": Score sur 100 (0=pas d'incitation à l'action, 100=très incitatif),
+      "index_fanatisme": Score sur 100 (0=ouvert au débat, 100=fermé et hostile aux avis divergents)
+
+    Ces données sont ensuite vectorisée pour pouvoir apprécier leurs similarités ou leurs divergences, et cartographier les chaînes youtube. 
     
     **Démarche :**
     - Les variables **numériques** (comme la charge politique latente ou l'index de fanatisme) sont normalisées via `StandardScaler` pour éviter que certaines dimensions dominent les autres.
