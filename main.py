@@ -10,7 +10,7 @@ import ast
 import plotly.express as px
 import re
 from collections import Counter
-
+st.set_page_config(layout="wide")
 st.markdown("""
     <style>
         /* Agrandir le texte dans les boutons radio de la sidebar */
@@ -27,7 +27,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 # Configuration de la page en mode large
-st.set_page_config(layout="wide")
+
 
 # Panneau latéral
 page = st.sidebar.radio("📁 Navigation :", [
