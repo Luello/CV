@@ -330,7 +330,7 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     
     Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
     
-    Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descripteurs discursifs, idéologiques et narratifs**.
+    Un **LLM** analyse les scripts et extrait automatiquement un ensemble de données relatives à un profil, une pratique ou une portée politique:
     """)
     
     # Construction du tableau descripteurs
@@ -417,6 +417,16 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
         fig.update_layout(height=700)
     
         st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("""
+    ---
+    
+    ### ⚙️ Démarche analytique
+    
+      Il y a de nombreuses façon de réaliser ce graphique, et celle-ci apparaît être la plus interessante, au regard des résultats. 
+      Afin d'approfondir la qualité de la visualisation, j'ai également pu créer un score mesurant la proximité entre groupes homogènes (Blast, Dani et Raz, Jean-Luc Mélenchon), et la distance entre groupes hétérogènes (Eric Zemmour et Jean-Luc Melenchon)
+      pour favoriser les modèles les plus cohérents. Malheureuseument, cette méthode impliquait un biais trop important pour être vraiment satisfaisante. 
+    """)
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
