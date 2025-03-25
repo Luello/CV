@@ -17,8 +17,8 @@ st.set_page_config(layout="wide")
 
 # Panneau latéral
 page = st.sidebar.radio("Choisissez une page :", ["Accueil", "Visualisations", "Projet NLP/LLM"])
-if page== "Visualisations":
-    st.title("📊 Visualisations")
+if page== "Visualisations réalisées avec les données Data.gouv sur les accidents routiers.":
+    st.title("📊 V")
 
     # Intégration de l'iframe Infogram
     infogram_html = """
