@@ -342,8 +342,9 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
     
     Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
+    De la même façon qu'un esprit critique pourrait discerner les différentes caractéristiques d'un discours, les LLM excellent dans des capacités de synthèses qui permettent d'automatiser une analyse qualitative.
     
-    Un **LLM** analyse les scripts et extrait automatiquement un ensemble de données relatives à un profil, une pratique ou une portée politique:
+    L'analyse des scripts extrait automatiquement un ensemble de données relatives à un profil, une identité, une pratique, une posture ou une portée politique:
     """)
     
     # Construction du tableau descripteurs
