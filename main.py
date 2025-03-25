@@ -304,43 +304,43 @@ Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descr
 
 # Construction du tableau descripteurs
 descripteurs = [
-    ("format_detecte", "Type de vidéo (débat, vlog, podcast...)"),
-    ("ton_general", "Ton dominant (neutre, polémique, académique...)"),
-    ("registre_discursif", "Type de discours (explicatif, militant, complotiste...)"),
-    ("stratégie_argumentative", "Méthode pour convaincre (émotion, narration...)"),
-    ("structure_narrative", "Organisation (linéaire, chaotique...)"),
-    ("style_de_politisation", "Intégration de la politique (affectif, rationnel...)"),
-    ("valeurs_invoquées", "Valeurs principales évoquées"),
-    ("thématiques_dominantes", "Thèmes politiques/sociaux centraux"),
-    ("cibles_implicites", "Groupes critiqués directement ou non"),
-    ("références_implicites", "Références culturelles ou historiques"),
-    ("axe_latent", "Cadres idéologiques implicites (socialisme, souverainisme...)"),
-    ("conception_du_nous", "Collectif valorisé (nation, peuple...)"),
-    ("positionnement_sociétal", "Posture face à la société (critique, universaliste...)"),
-    ("cadre_problematisation", "Façon de poser les problèmes"),
-    ("figures_ennemies", "Adversaires identifiés"),
-    ("récit_idéologique", "Narration politique globale"),
-    ("axes_de_tension", "Conflits idéologiques mis en tension"),
-    ("paradigmes_compatibles", "Paradigmes politiques alignés"),
-    ("ton_politique", "Ton explicitement politique (engagé, distant...)"),
-    ("enjeux_sociaux_centrés", "Enjeux sociaux mis en avant"),
-    ("charge_politique_latente", "Score 0-100 (politisation globale)"),
-    ("position_stratégique", "Stratégie rhétorique (offensive, défensive...)"),
-    ("mode_d_interpellation_du_public", "Appel au public (pédagogique, direct...)"),
-    ("figure_du_locuteur", "Rôle du locuteur (expert, citoyen...)"),
-    ("échelle_de_politisation", "Portée politique (locale, nationale...)"),
-    ("type_de_menace_perçue", "Nature de la menace évoquée"),
-    ("registre_moral_implicite", "Registre moral (progressiste, conservateur...)"),
-    ("ton_affectif_dominant", "Émotion dominante (colère, espoir...)"),
-    ("niveau_de_certitude", "Score 0-100 (confiance affirmée)"),
-    ("index_performativite", "Score 0-100 (incitation à l'action)"),
-    ("index_fanatisme", "Score 0-100 (fermeté idéologique)")
+    ("format_detecte", "Type précis de vidéo", "débat, vlog, podcast, analyse politique…"),
+    ("ton_general", "Ton dominant du discours", "neutre, polémique, académique, humoristique…"),
+    ("registre_discursif", "Type discursif", "explicatif, militant, scientifique, complotiste…"),
+    ("stratégie_argumentative", "Stratégie argumentative", "démonstratif, émotionnel, narratif…"),
+    ("structure_narrative", "Organisation narrative", "linéaire, chaotique, récurrente…"),
+    ("style_de_politisation", "Forme de politisation", "rationnel, affectif, moraliste…"),
+    ("valeurs_invoquées", "Valeurs mises en avant", "liberté, égalité, nation, méritocratie…"),
+    ("thématiques_dominantes", "Thèmes principaux", "éducation, immigration, écologie…"),
+    ("cibles_implicites", "Cibles idéologiques", "élites, médias, gouvernement, minorités…"),
+    ("références_implicites", "Références culturelles", "Zemmour, Orwell, Deleuze…"),
+    ("axe_latent", "Cadres idéologiques", "technocratie, souverainisme, socialisme…"),
+    ("conception_du_nous", "Collectif valorisé", "peuple, citoyens, communauté, nation…"),
+    ("positionnement_sociétal", "Rapport à la société", "critique des élites, défense d’un groupe…"),
+    ("cadre_problematisation", "Façon de poser les enjeux", "système en crise, injustice sociale…"),
+    ("figures_ennemies", "Adversaires implicites", "le système, les mondialistes…"),
+    ("récit_idéologique", "Narration politique", "déclin civilisationnel, peuple trahi…"),
+    ("axes_de_tension", "Axes de conflit", "élite vs peuple, progrès vs tradition…"),
+    ("paradigmes_compatibles", "Paradigmes compatibles", "libéralisme, anarchisme, gaullisme…"),
+    ("ton_politique", "Ton politique", "engagé, militant, distant…"),
+    ("enjeux_sociaux_centrés", "Enjeux sociaux centraux", "santé, sécurité, inclusion…"),
+    ("charge_politique_latente", "Score de politisation", "0 = neutre, 100 = très politisé"),
+    ("position_stratégique", "Stratégie globale", "offensive, défensive, ambiguë…"),
+    ("mode_d_interpellation_du_public", "Type d’interpellation", "directe, pédagogique, émotionnelle…"),
+    ("figure_du_locuteur", "Rôle du locuteur", "expert, citoyen, leader, victime…"),
+    ("échelle_de_politisation", "Niveau d’ancrage", "locale, nationale, internationale…"),
+    ("type_de_menace_perçue", "Menace évoquée", "déclin, subversion, chaos…"),
+    ("registre_moral_implicite", "Fond moral", "progressiste, conservateur, égalitariste…"),
+    ("ton_affectif_dominant", "Émotion dominante", "colère, peur, espoir, fierté…"),
+    ("niveau_de_certitude", "Certitude exprimée", "score 0-100 (incertitude → affirmation)"),
+    ("index_performativite", "Performativité", "0 = descriptif, 100 = incitation forte à l’action"),
+    ("index_fanatisme", "Fermeté idéologique", "0 = ouvert au débat, 100 = hostile aux avis opposés")
 ]
 
-df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "📝 Description"])
+df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
 
-# Encadré visuel avec explication
-with st.expander("📋 Liste complète des descripteurs analysés par le LLM"):
+# Encapsuler proprement
+with st.expander("📘 Voir la liste détaillée des descripteurs analysés par le LLM", expanded=False):
     st.dataframe(df_descr, use_container_width=True, height=600)
 
 # Démarche analytique
