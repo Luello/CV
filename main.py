@@ -291,18 +291,6 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
 
   import pandas as pd
 import streamlit as st
-
-st.markdown("""
-### 🧠 Objectif
-
-Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
-
-Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
-
-Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descripteurs discursifs, idéologiques et narratifs**.
-""")
-
-# Construction du tableau descripteurs
 descripteurs = [
     ("format_detecte", "Type précis de vidéo", "débat, vlog, podcast, analyse politique…"),
     ("ton_general", "Ton dominant du discours", "neutre, polémique, académique, humoristique…"),
@@ -337,11 +325,22 @@ descripteurs = [
     ("index_fanatisme", "Fermeté idéologique", "0 = ouvert au débat, 100 = hostile aux avis opposés")
 ]
 
-df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
+st.markdown("""
+### 🧠 Objectif
 
+Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
+
+Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
+
+Un **LLM** analyse les scripts et extrait automatiquement un ensemble de **descripteurs discursifs, idéologiques et narratifs**.
+""")
+
+# Construction du tableau descripteurs
+
+
+df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
+st.dataframe(df_descr)
 # Encapsuler proprement
-with st.expander("📘 Voir la liste détaillée des descripteurs analysés par le LLM", expanded=False):
-    st.dataframe(df_descr, use_container_width=True, height=600)
 
 # Démarche analytique
 st.markdown("""
