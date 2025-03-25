@@ -33,7 +33,8 @@ st.set_page_config(layout="wide")
 page = st.sidebar.radio("📁 Navigation :", [
     "🏠 Accueil",
     "📈 Démo - Visualisations",
-    "🧠 NLP/LLM"
+    "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+    "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
 ])
 if page== "📈 Démo - Visualisations":
     st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
@@ -276,7 +277,10 @@ if page == "🏠 Accueil":
     except FileNotFoundError:
         st.error("Le fichier n'a pas été trouvé. Vérifiez le chemin et le nom du fichier.")
 
-elif page == "🧠 NLP/LLM":
+
+elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
+    
+elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
         <p><strong>Présentation du projet :</strong></p>
