@@ -10,6 +10,8 @@ import ast
 import plotly.express as px
 import re
 from collections import Counter
+import base64
+
 st.set_page_config(layout="wide")
 st.markdown("""
     <style>
