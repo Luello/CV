@@ -39,6 +39,8 @@ page = st.sidebar.radio("📁 Navigation :", [
     "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
 ])
 if page== "📈 Démo - Visualisations":
+    st.title(" Overview Analyse et Clustering")
+    
     file_ = open("cluster.gif", "rb")
     contents = file_.read()
     data_url = base64.b64encode(contents).decode("utf-8")
