@@ -184,7 +184,7 @@ if page == "Accueil":
             <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
                 <p><strong>Formations :</strong></p>
                 <ul style="list-style-position: inside; text-align: left; display: inline-block;">
-                    <li><strong>Alternance Data Scientist - Marine Nationale / WCS (2023)</strong>
+                    <li><strong>Data Scientist - Marine Nationale / WCS (2023)</strong>
                         <ul style="margin-left: 20px; list-style-type: disc;">
                             <li>Projets de Machine learning: Prédiction, Classification, Clustering, méthodes de Bagging/Boosting, modélisation de séries temporelles, méthodes ensemblistes...</li>
                             <li>Réseaux de neurones: CNN, RNN, LSTM : Python, TensorFlow, Keras, Scikit-learn</li>
