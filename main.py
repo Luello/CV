@@ -279,7 +279,90 @@ if page == "🏠 Accueil":
 
 
 elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
+    import pandas as pd
+    import numpy as np
+    from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
+    from umap import UMAP
+    import plotly.express as px
+    import streamlit as st
+    import ast
+
+    st.title("📊 Projection UMAP des chaînes YouTube selon leur identité politique")
+
+    st.markdown("""
+    Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
     
+    **Démarche :**
+    - Les variables **numériques** (comme la charge politique latente ou l'index de fanatisme) sont normalisées via `StandardScaler` pour éviter que certaines dimensions dominent les autres.
+    - Les variables **catégorielles multilabels** (par ex. *valeurs invoquées*, *figures ennemies*) sont encodées via `MultiLabelBinarizer` pour transformer chaque valeur en vecteur binaire multi-hot.
+    - Une fois toutes les dimensions combinées, `UMAP` est utilisé pour projeter ces vecteurs dans un espace bidimensionnel. Cela permet de visualiser des proximités idéologiques implicites.
+    
+    Le gradient de couleur représente la **charge politique latente** : plus elle est élevée, plus le contenu est politiquement marqué.
+    """)
+
+    # Chargement des données
+    df = pd.read_csv("results_df.csv")
+    df = df.dropna(subset=["title", "charge_politique_latente"]).reset_index(drop=True)
+
+    # Conversion des colonnes de listes depuis string (si nécessaire)
+    list_cols = [
+        "style_de_politisation",
+        "figures_ennemies",
+        "valeurs_invoquées",
+        "thématiques_dominantes"
+    ]
+
+    for col in list_cols:
+        df[col] = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else [])
+
+    # Colonnes numériques à inclure
+    numerical_cols = ["charge_politique_latente", "index_fanatisme"]
+
+    # Encodage MultiLabel
+    encoded_parts = []
+    for col in list_cols:
+        mlb = MultiLabelBinarizer()
+        try:
+            binarized = mlb.fit_transform(df[col])
+            encoded_df = pd.DataFrame(binarized, columns=[f"{col}__{c}" for c in mlb.classes_])
+            encoded_parts.append(encoded_df)
+        except Exception as e:
+            st.warning(f"Problème d'encodage pour {col} : {e}")
+
+    # Construction de la matrice finale
+    X_num = df[numerical_cols].fillna(0).reset_index(drop=True)
+    X_cat = pd.concat(encoded_parts, axis=1).reset_index(drop=True)
+    X_all = pd.concat([X_num, X_cat], axis=1)
+
+    # Normalisation
+    X_scaled = StandardScaler().fit_transform(X_all)
+
+    # UMAP
+    umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
+    embedding = umap.fit_transform(X_scaled)
+
+    # DataFrame pour visualisation
+    df_visu = pd.DataFrame({
+        "x": embedding[:, 0],
+        "y": embedding[:, 1],
+        "title": df["title"],
+        "charge_politique_latente": df["charge_politique_latente"]
+    })
+
+    # Graphique Plotly
+    fig = px.scatter(
+        df_visu,
+        x="x", y="y",
+        text="title",
+        color="charge_politique_latente",
+        color_continuous_scale="RdBu_r",
+        hover_name="title",
+        title="Projection UMAP des chaînes (gradient = charge politique latente)"
+    )
+    fig.update_traces(textposition='top center')
+    fig.update_layout(height=700)
+
+    st.plotly_chart(fig, use_container_width=True)
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
