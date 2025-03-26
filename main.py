@@ -356,17 +356,24 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     
     # Démarche analytique
     st.markdown("""
-    ---
-    
-    ### ⚙️ Démarche analytique
-    
-    - Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées via `StandardScaler`.
-    - Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées avec `MultiLabelBinarizer`.
-    - Ces vecteurs sont projetés dans un plan 2D avec `UMAP` (distance *cosine*), ce qui permet d’observer des proximités idéologiques latentes.
-    
-    🎨 Le **gradient de couleur** représente la politisation : plus il est élevé, plus le discours est marqué politiquement.
-    """)
+---
+  
+## ⚙️ Démarche analytique
 
+### Prétraitement des variables :
+- 🔢 Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées avec `StandardScaler`.
+- 🏷️ Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées avec `MultiLabelBinarizer`.
+
+### Réduction de dimension :
+- 🧭 Les vecteurs sont projetés en 2D via `UMAP` (distance **cosine**), pour visualiser des proximités idéologiques latentes dans l’espace.
+
+---
+
+## 📊 Lecture du graphique
+
+- La **distance spatiale** entre les chaînes YouTube représente leur **distance idéologique latente**.
+- 🎨 Le **gradient de couleur** indique la **charge politique** : plus la teinte est vive, plus le discours est marqué politiquement.
+""")
     # Chargement des données
     with st.spinner("⏳ Patientez quelques secondes le temps que le graphique charge :)"):
         df = pd.read_csv("results_df.csv")
