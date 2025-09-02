@@ -179,7 +179,7 @@ def render_fullwidth_gif(path: str):
 # PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
-    # HERO (photo / intro / stacks / CTA)
+    # HERO : photo + (titre, pitch, stacks, CTA)
     st.markdown('<div class="hero">', unsafe_allow_html=True)
     colL, colR = st.columns([0.9, 1.4])
 
@@ -197,7 +197,8 @@ if page == "🏠 Accueil":
             unsafe_allow_html=True
         )
 
-        # Stacks (incluant Git, Bash, Spark)
+        # Stacks (avec Git, Bash, Spark) — séparés des CTA
+        st.markdown('<div class="stack-wrap">', unsafe_allow_html=True)
         st.markdown(
             '<div class="badges">'
             '<span class="badge"><span class="dot py"></span>Python</span>'
@@ -214,10 +215,11 @@ if page == "🏠 Accueil":
             '<span class="badge"><span class="dot spark"></span>Spark</span>'
             '</div>', unsafe_allow_html=True
         )
+        st.markdown('</div>', unsafe_allow_html=True)  # /stack-wrap
 
         # CTA
-        MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
+        MAIL = "mailto:prenom.nom@mail.com"
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"
         st.markdown(
             f'<div class="cta">'
             f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
@@ -228,13 +230,62 @@ if page == "🏠 Accueil":
 
     st.markdown('</div>', unsafe_allow_html=True)  # /hero
 
-    # GIF PLEIN LARGEUR (100% conteneur)
-    render_fullwidth_gif("cluster.gif")
+    # === Phrase explicative ===
+    st.markdown(
+        '<p style="text-align:center; font-size:1rem; color:#334155; margin-top:20px;">'
+        '🔍 <b>Clustering exploratoire</b> : les données sont regroupées automatiquement en familles selon leurs similarités '
+        '(<i>algorithmes non supervisés comme KMeans</i>). Cela permet de faire émerger des profils ou tendances cachées '
+        'et d’apporter une vision synthétique utile à l’analyse et à la décision.'
+        '</p>',
+        unsafe_allow_html=True
+    )
 
-    # BLOC SOUS-GIF : 2 colonnes → Applications | Disponibilités
-    st.markdown('<div class="below">', unsafe_allow_html=True)
+    # === Bloc visuels : GIF + Infogram côte à côte ===
+    colA, colB = st.columns(2, gap="large")
 
-    # Colonne 1 : Applications
+    with colA:
+        # GIF clustering
+        def render_fullwidth_gif(path: str):
+            p = Path(path)
+            if p.exists():
+                with open(path, "rb") as f:
+                    data_url = base64.b64encode(f.read()).decode("utf-8")
+                st.markdown(
+                    f'<div class="fullgif"><img src="data:image/gif;base64,{data_url}" alt="aperçu clustering"></div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
+                            unsafe_allow_html=True)
+            else:
+                st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
+        render_fullwidth_gif("cluster.gif")
+
+    with colB:
+        st.subheader("📊 Visualisations Data.gouv — Accidents routiers")
+        infogram_html = """
+        <div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
+             data-type="interactive" data-title=""></div>
+        <script>
+        !function(e,n,i,s){
+            var d="InfogramEmbeds";
+            var o=e.getElementsByTagName(n)[0];
+            if(window[d] && window[d].initialized) {
+                window[d].process && window[d].process();
+            } else if(!e.getElementById(i)){
+                var r=e.createElement(n);
+                r.async=1;
+                r.id=i;
+                r.src=s;
+                o.parentNode.insertBefore(r,o);
+            }
+        }(document,"script","infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");
+        </script>
+        """
+        st.components.v1.html(infogram_html, height=400, scrolling=True)
+
+    # === Cartes sous les visuels ===
+    st.markdown('<div class="info-grid">', unsafe_allow_html=True)
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Applications métier")
     st.markdown('<ul class="clean">'
@@ -244,7 +295,6 @@ if page == "🏠 Accueil":
                 '</ul>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Colonne 2 : Disponibilités
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Disponibilités & mobilité")
     st.markdown(
@@ -256,10 +306,7 @@ if page == "🏠 Accueil":
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)  # /below
-
-    # Types de données maîtrisées (une seule ligne de tags)
-    st.markdown('<div class="card" style="margin-top:16px;">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Types de données maîtrisées")
     st.markdown(
         '<div class="pills">'
@@ -272,6 +319,7 @@ if page == "🏠 Accueil":
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
+    st.markdown('</div>', unsafe_allow_html=True)  # /info-grid
     ###########################
     tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
 
@@ -1076,6 +1124,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
