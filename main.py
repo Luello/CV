@@ -151,17 +151,17 @@ ul.clean li { margin: .35rem 0; }
 # NAVIGATION
 # =========================
 page = st.sidebar.radio(
-    "📁 Navigation :",
+    "⬇️  Projets Persos :",
     [
         "🏠 Accueil",
         #"📈 Démo - Visualisations",
-        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "▶️ NLP: Cartographie politique des Youtubeurs",
         "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
     ],
     index=[
         "🏠 Accueil",
         #"📈 Démo - Visualisations",
-        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "▶️ NLP: Cartographie politique des Youtubeurse",
         "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
     ].index(st.session_state["nav"]),
     key="nav"
@@ -529,7 +529,7 @@ if page == "🏠 Accueil":
 
 # =========================
   
-elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
+elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
     import pandas as pd
     import numpy as np
     from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
@@ -537,101 +537,53 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
     import plotly.express as px
     import streamlit as st
     import ast
-    descripteurs = [
-    ("format_detecte", "Type précis de vidéo", "débat, vlog, podcast, analyse politique…"),
-    ("ton_general", "Ton dominant du discours", "neutre, polémique, académique, humoristique…"),
-    ("registre_discursif", "Type discursif", "explicatif, militant, scientifique, complotiste…"),
-    ("stratégie_argumentative", "Stratégie argumentative", "démonstratif, émotionnel, narratif…"),
-    ("structure_narrative", "Organisation narrative", "linéaire, chaotique, récurrente…"),
-    ("style_de_politisation", "Forme de politisation", "rationnel, affectif, moraliste…"),
-    ("valeurs_invoquées", "Valeurs mises en avant", "liberté, égalité, nation, méritocratie…"),
-    ("thématiques_dominantes", "Thèmes principaux", "éducation, immigration, écologie…"),
-    ("cibles_implicites", "Cibles idéologiques", "élites, médias, gouvernement, minorités…"),
-    ("références_implicites", "Références culturelles", "Zemmour, Orwell, Deleuze…"),
-    ("axe_latent", "Cadres idéologiques", "technocratie, souverainisme, socialisme…"),
-    ("conception_du_nous", "Collectif valorisé", "peuple, citoyens, communauté, nation…"),
-    ("positionnement_sociétal", "Rapport à la société", "critique des élites, défense d’un groupe…"),
-    ("cadre_problematisation", "Façon de poser les enjeux", "système en crise, injustice sociale…"),
-    ("figures_ennemies", "Adversaires implicites", "le système, les mondialistes…"),
-    ("récit_idéologique", "Narration politique", "déclin civilisationnel, peuple trahi…"),
-    ("axes_de_tension", "Axes de conflit", "élite vs peuple, progrès vs tradition…"),
-    ("paradigmes_compatibles", "Paradigmes compatibles", "libéralisme, anarchisme, gaullisme…"),
-    ("ton_politique", "Ton politique", "engagé, militant, distant…"),
-    ("enjeux_sociaux_centrés", "Enjeux sociaux centraux", "santé, sécurité, inclusion…"),
-    ("charge_politique_latente", "Score de politisation", "0 = neutre, 100 = très politisé"),
-    ("position_stratégique", "Stratégie globale", "offensive, défensive, ambiguë…"),
-    ("mode_d_interpellation_du_public", "Type d’interpellation", "directe, pédagogique, émotionnelle…"),
-    ("figure_du_locuteur", "Rôle du locuteur", "expert, citoyen, leader, victime…"),
-    ("échelle_de_politisation", "Niveau d’ancrage", "locale, nationale, internationale…"),
-    ("type_de_menace_perçue", "Menace évoquée", "déclin, subversion, chaos…"),
-    ("registre_moral_implicite", "Fond moral", "progressiste, conservateur, égalitariste…"),
-    ("ton_affectif_dominant", "Émotion dominante", "colère, peur, espoir, fierté…"),
-    ("niveau_de_certitude", "Certitude exprimée", "score 0-100 (incertitude → affirmation)"),
-    ("index_performativite", "Performativité", "0 = descriptif, 100 = incitation forte à l’action"),
-    ("index_fanatisme", "Fermeté idéologique", "0 = ouvert au débat, 100 = hostile aux avis opposés")
-]
-    st.title("📊 Projection UMAP des chaînes YouTube selon leur identité politique")
-
-
+    import time
     
-    st.markdown("""
-    ### 🧠 Objectif
+    st.title("📊 Cartographie politique des influenceurs YouTube")
     
-    Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
-    
-    Ce graphique illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites dans les scripts vidéos.
-    De la même façon qu'un esprit critique pourrait discerner les différentes caractéristiques d'un discours, les LLM excellent dans des capacités de synthèses qui permettent d'automatiser une analyse qualitative.
-    
-    L'analyse des scripts extrait automatiquement un ensemble de données relatives à un profil, une identité, une pratique, une posture ou une portée politique:
-    """)
-    
-    # Construction du tableau descripteurs
-    
-    
-    df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
-    st.dataframe(df_descr)
-    # Encapsuler proprement
-    
-    # Démarche analytique
-    st.markdown("""
----
-  
-## ⚙️ Démarche analytique
-
-### Prétraitement des variables :
-- 🔢 Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées avec `StandardScaler`.
-- 🏷️ Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées avec `MultiLabelBinarizer`.
-
-### Réduction de dimension :
-- 🧭 Les vecteurs sont projetés en 2D via `UMAP` (distance **cosine**), pour visualiser des proximités idéologiques latentes dans l’espace.
-
----
-
-## 📊 Lecture du graphique
-
-- La **distance spatiale** entre les chaînes YouTube représente leur **distance idéologique latente**.
-- 🎨 Le **gradient de couleur** indique la **charge politique** : plus la teinte est vive, plus le discours est marqué politiquement.
-""")
-    # Chargement des données
-    with st.spinner("⏳ Patientez quelques secondes le temps que le graphique charge :)"):
-        df = pd.read_csv("results_df.csv")
-        df = df.dropna(subset=["title", "charge_politique_latente"]).reset_index(drop=True)
-    
-        # Conversion des colonnes de listes depuis string (si nécessaire)
+    # Afficher un message d'attente stylisé
+    with st.status("🔄 **Calcul en cours...** Veuillez patienter pendant le chargement de la visualisation", expanded=True) as status:
+        st.write("📥 Chargement des données...")
+        time.sleep(0.5)
+        
+        # Chargement des données avec cache pour optimiser les performances
+        @st.cache_data
+        def load_data():
+            df = pd.read_csv("results_df.csv")
+            df = df.dropna(subset=["title", "charge_politique_latente"]).reset_index(drop=True)
+            
+            # Conversion des colonnes de listes depuis string
+            list_cols = [
+                "style_de_politisation",
+                "figures_ennemies",
+                "valeurs_invoquées",
+                "thématiques_dominantes"
+            ]
+        
+            for col in list_cols:
+                df[col] = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else [])
+            
+            return df
+        
+        st.write("🧠 Préparation des variables...")
+        time.sleep(0.3)
+        
+        df = load_data()
+        
+        st.write("📊 Encodage des données catégorielles...")
+        time.sleep(0.3)
+        
+        # Colonnes numériques à inclure
+        numerical_cols = ["charge_politique_latente", "index_fanatisme"]
+        
+        # Encodage MultiLabel
         list_cols = [
             "style_de_politisation",
             "figures_ennemies",
             "valeurs_invoquées",
             "thématiques_dominantes"
         ]
-    
-        for col in list_cols:
-            df[col] = df[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x.startswith('[') else [])
-    
-        # Colonnes numériques à inclure
-        numerical_cols = ["charge_politique_latente", "index_fanatisme"]
-    
-        # Encodage MultiLabel
+        
         encoded_parts = []
         for col in list_cols:
             mlb = MultiLabelBinarizer()
@@ -641,19 +593,25 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
                 encoded_parts.append(encoded_df)
             except Exception as e:
                 st.warning(f"Problème d'encodage pour {col} : {e}")
-    
+        
+        st.write("⚙️ Construction de la matrice d'analyse...")
+        time.sleep(0.3)
+        
         # Construction de la matrice finale
         X_num = df[numerical_cols].fillna(0).reset_index(drop=True)
         X_cat = pd.concat(encoded_parts, axis=1).reset_index(drop=True)
         X_all = pd.concat([X_num, X_cat], axis=1)
-    
+        
         # Normalisation
         X_scaled = StandardScaler().fit_transform(X_all)
-    
+        
+        st.write("🧭 Calcul des positions avec UMAP...")
+        time.sleep(0.5)
+        
         # UMAP
         umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
         embedding = umap.fit_transform(X_scaled)
-    
+        
         # DataFrame pour visualisation
         df_visu = pd.DataFrame({
             "x": embedding[:, 0],
@@ -661,7 +619,10 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
             "title": df["title"],
             "charge_politique_latente": df["charge_politique_latente"]
         })
-    
+        
+        st.write("🎨 Génération de la visualisation...")
+        time.sleep(0.5)
+        
         # Graphique Plotly
         fig = px.scatter(
             df_visu,
@@ -670,22 +631,92 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
             color="charge_politique_latente",
             color_continuous_scale="RdBu_r",
             hover_name="title",
-            title="Projection UMAP des chaînes (gradient = charge politique latente)"
+            title="Projection UMAP des chaînes YouTube par orientation politique"
         )
-        fig.update_traces(textposition='top center')
-        fig.update_layout(height=700)
+        fig.update_traces(textposition='top center', marker=dict(size=10))
+        fig.update_layout(height=600, showlegend=False)
+        
+        status.update(label="✅ Analyse terminée! Visualisation prête.", state="complete")
     
-        st.plotly_chart(fig, use_column_width=True)
-
-        st.markdown("""
+    # Afficher le graphique
+    st.plotly_chart(fig, use_column_width=True)
+    
+    # Explications sous le graphique
+    st.markdown("""
     ---
     
-    ### ⚙️ Démarche analytique
+    ### 🧠 Comment interpréter cette visualisation
     
-      Il y a de nombreuses façon de réaliser ce graphique, et celle-ci apparaît être la plus interessante, au regard des résultats. 
-      Afin d'approfondir la qualité de la visualisation, j'ai également pu créer un score mesurant la proximité entre groupes homogènes (Blast, Dani et Raz, Jean-Luc Mélenchon), et la distance entre groupes hétérogènes (Eric Zemmour et Jean-Luc Melenchon)
-      pour favoriser les modèles les plus cohérents. Malheureuseument, cette méthode impliquait un biais trop important pour être vraiment satisfaisante. 
+    - **Positionnement** : La distance entre les points représente leur proximité idéologique
+    - **Couleur** : L'intensité de la couleur indique le niveau d'engagement politique
+    - **Label** : Le nom de la chaîne apparaît au survol ou à côté du point
+    
+    Cette analyse combine techniques quantitatives et qualitatives pour cartographier le paysage politique des influenceurs YouTube.
     """)
+    
+    # Section méthodologie avec accordéon pour ne pas surcharger l'interface
+    with st.expander("📋 Méthodologie détaillée et variables analysées"):
+        st.markdown("""
+        ### ⚙️ Démarche analytique
+        
+        #### Prétraitement des variables :
+        - 🔢 Les variables **numériques** (ex: `charge_politique_latente`, `index_fanatisme`) sont standardisées
+        - 🏷️ Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées
+        
+        #### Réduction de dimension :
+        - 🧭 Les vecteurs sont projetés en 2D via `UMAP` (distance **cosine**)
+        
+        #### Variables analysées :
+        """)
+        
+        descripteurs = [
+            ("format_detecte", "Type précis de vidéo", "débat, vlog, podcast, analyse politique…"),
+            ("ton_general", "Ton dominant du discours", "neutre, polémique, académique, humoristique…"),
+            ("registre_discursif", "Type discursif", "explicatif, militant, scientifique, complotiste…"),
+            ("stratégie_argumentative", "Stratégie argumentative", "démonstratif, émotionnel, narratif…"),
+            ("structure_narrative", "Organisation narrative", "linéaire, chaotique, récurrente…"),
+            ("style_de_politisation", "Forme de politisation", "rationnel, affectif, moraliste…"),
+            ("valeurs_invoquées", "Valeurs mises en avant", "liberté, égalité, nation, méritocratie…"),
+            ("thématiques_dominantes", "Thèmes principaux", "éducation, immigration, écologie…"),
+            ("cibles_implicites", "Cibles idéologiques", "élites, médias, gouvernement, minorités…"),
+            ("références_implicites", "Références culturelles", "Zemmour, Orwell, Deleuze…"),
+            ("axe_latent", "Cadres idéologiques", "technocratie, souverainisme, socialisme…"),
+            ("conception_du_nous", "Collectif valorisé", "peuple, citoyens, communauté, nation…"),
+            ("positionnement_sociétal", "Rapport à la société", "critique des élites, défense d'un groupe…"),
+            ("cadre_problematisation", "Façon de poser les enjeux", "système en crise, injustice sociale…"),
+            ("figures_ennemies", "Adversaires implicites", "le système, les mondialistes…"),
+            ("récit_idéologique", "Narration politique", "déclin civilisationnel, peuple trahi…"),
+            ("axes_de_tension", "Axes de conflit", "élite vs peuple, progrès vs tradition…"),
+            ("paradigmes_compatibles", "Paradigmes compatibles", "libéralisme, anarchisme, gaullisme…"),
+            ("ton_politique", "Ton politique", "engagé, militant, distant…"),
+            ("enjeux_sociaux_centrés", "Enjeux sociaux centraux", "santé, sécurité, inclusion…"),
+            ("charge_politique_latente", "Score de politisation", "0 = neutre, 100 = très politisé"),
+            ("position_stratégique", "Stratégie globale", "offensive, défensive, ambiguë…"),
+            ("mode_d_interpellation_du_public", "Type d'interpellation", "directe, pédagogique, émotionnelle…"),
+            ("figure_du_locuteur", "Rôle du locuteur", "expert, citoyen, leader, victime…"),
+            ("échelle_de_politisation", "Niveau d'ancrage", "locale, nationale, internationale…"),
+            ("type_de_menace_perçue", "Menace évoquée", "déclin, subversion, chaos…"),
+            ("registre_moral_implicite", "Fond moral", "progressiste, conservateur, égalitariste…"),
+            ("ton_affectif_dominant", "Émotion dominante", "colère, peur, espoir, fierté…"),
+            ("niveau_de_certitude", "Certitude exprimée", "score 0-100 (incertitude → affirmation)"),
+            ("index_performativite", "Performativité", "0 = descriptif, 100 = incitation forte à l'action"),
+            ("index_fanatisme", "Fermeté idéologique", "0 = ouvert au débat, 100 = hostile aux avis opposés")
+        ]
+        
+        df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
+        st.dataframe(df_descr, height=400)
+        
+        st.markdown("""
+        ---
+        
+        ### 🎯 Objectif du projet
+        
+        Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
+        
+        L'analyse des scripts extrait automatiquement un ensemble de données relatives à un profil, une identité, une pratique, une posture ou une portée politique.
+        
+        Cette approche illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites.
+        """)
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
@@ -971,6 +1002,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
