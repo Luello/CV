@@ -210,7 +210,7 @@ if page == "🏠 Accueil":
         col_prev, col_cta = st.columns([1.7, 1], gap="medium")
         with col_prev:
             st.markdown('<div class="preview">', unsafe_allow_html=True)
-            img_bytes = load_image_bytes("pol_plot.png")  # <- ta demande : remplacement du GIF par pol_plot.png
+ # <- ta demande : remplacement du GIF par pol_plot.png
             if img_bytes:
                 st.image(img_bytes, use_column_width=True)
                 st.markdown('<div class="caption">Cartographie narrative — aperçu</div>', unsafe_allow_html=True)
@@ -985,6 +985,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
