@@ -212,7 +212,7 @@ if page == "🏠 Accueil":
         st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
         st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(
-            '<p class="lead"> "Développeur Full Stack Data | Création de solutions automatisées pour des gains d'efficacité et une vision data-driven.">',
+            '<p class="lead"> Développeur Full Stack Data | Création de solutions automatisées pour des gains d'efficacité et une vision data-driven.</p>',
             unsafe_allow_html=True
         )
         st.markdown(
@@ -971,6 +971,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
