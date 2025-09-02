@@ -11,354 +11,284 @@ import plotly.express as px
 import re
 from collections import Counter
 import base64
-from pathlib import Path
 
-# =========================
-# CONFIG APP
-# =========================
-st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
-
-if "nav" not in st.session_state:
-    st.session_state["nav"] = "🏠 Accueil"
-
-# =========================
-# STYLES (clair, harmonisé, largeur maîtrisée)
-# =========================
+st.set_page_config(layout="wide")
 st.markdown("""
-<style>
-:root{
-  --app-bg:#f6f8fb; --card:#ffffff; --text:#0f172a; --muted:#475569; --border:#e6e9f0;
-  --chip:#eef2f7; --chip-text:#0f172a; --primary:#2563eb; --primary-fore:#ffffff;
-  --shadow:0 10px 28px rgba(15,23,42,.06); --shadow-soft:0 4px 14px rgba(15,23,42,.08);
-}
-.stApp{background:linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%)!important;}
-.block-container{padding-top:1rem!important; max-width:1080px!important; margin:auto!important;}
-#MainMenu, footer{visibility:hidden}
+    <style>
+        /* Agrandir le texte dans les boutons radio de la sidebar */
+        section[data-testid="stSidebar"] .stRadio > label {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
 
-/* HERO */
-.hero{display:grid; grid-template-columns:0.9fr 1.4fr; gap:24px; border-radius:18px; padding:24px;
-      background:linear-gradient(160deg,var(--card) 0%, #fafbff 85%)!important;
-      border:1px solid var(--border)!important; color:var(--text)!important; box-shadow:var(--shadow)!important;}
-@media(max-width:960px){.hero{grid-template-columns:1fr}}
-.hero h1{font-size:2.1rem; margin:0 0 6px 0}
-.accent{height:3px; width:120px; background:var(--primary); border-radius:2px; margin:4px 0 14px 0}
-.lead{font-size:1.02rem; line-height:1.55; color:var(--muted)!important; margin:0}
-
-/* Col gauche */
-.photo{border-radius:16px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow-soft); background:#fff}
-.photo img{width:100%; height:auto; display:block}
-.gifwrap{margin-top:12px; border:1px solid var(--border); border-radius:12px; overflow:hidden;
-         box-shadow:var(--shadow-soft); background:#fff}
-.caption{text-align:center; color:#64748b; font-size:.9rem; margin-top:6px}
-
-/* Stacks + CTA */
-.stack-wrap{margin-top:14px}
-.badges{display:flex; flex-wrap:wrap; gap:8px}
-.badge{display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px;
-       border:1px solid var(--border); background:var(--chip); color:var(--chip-text); font-size:.86rem;
-       box-shadow:0 1px 1px rgba(15,23,42,.04)}
-.dot{width:8px; height:8px; border-radius:999px; display:inline-block}
-.dot.py{background:#16a34a}.dot.sql{background:#0ea5e9}.dot.qlk{background:#8b5cf6}
-.dot.sta{background:#f59e0b}.dot.dja{background:#0ea5e9}.dot.af{background:#ef4444}
-.dot.aws{background:#f97316}.dot.dl{background:#22c55e}.dot.emb{background:#64748b}
-.dot.git{background:#f43f5e}.dot.bash{background:#22d3ee}.dot.spark{background:#fb923c}
-
-.cta{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); display:flex; gap:10px; flex-wrap:wrap}
-.btn{display:inline-block; text-decoration:none; padding:10px 14px; border-radius:12px; border:1px solid var(--border);
-     background:#fff; color:var(--text); box-shadow:0 2px 6px rgba(15,23,42,.05); transition:all .15s ease; font-size:.95rem}
-.btn.primary{background:var(--primary); color:var(--primary-fore); border-color:var(--primary);
-             box-shadow:0 8px 18px rgba(37,99,235,.22)}
-.btn:hover{transform:translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10)}
-
-/* GIF plein largeur sous le hero */
-.fullgif{margin:16px 0 8px 0; border:1px solid var(--border); border-radius:14px; overflow:hidden;
-         box-shadow:var(--shadow-soft); background:#fff}
-.fullgif img{width:100%; display:block}
-
-/* Grid sous le GIF */
-.info-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-top:16px}
-@media(max-width:1100px){.info-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:720px){.info-grid{grid-template-columns:1fr}}
-.card{border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:var(--shadow-soft); padding:16px}
-.card h3{margin:0 0 10px 0}
-ul.clean{margin:0; padding-left:1.1rem}
-.pills{display:flex; flex-wrap:wrap; gap:8px}
-.pill{display:inline-block; padding:7px 12px; border-radius:999px; background:#f1f5f9; border:1px solid var(--border);
-     color:#334155; font-size:.85rem; box-shadow:0 1px 1px rgba(15,23,42,.04)}
-</style>
+        /* Bonus : icônes emoji un peu plus espacées */
+        section[data-testid="stSidebar"] .stRadio div {
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
+        }
+    </style>
 """, unsafe_allow_html=True)
+# Configuration de la page en mode large
 
 
-# =========================
-# NAVIGATION
-# =========================
-page = st.sidebar.radio(
-    "📁 Navigation :",
-    [
-        "🏠 Accueil",
-        "📈 Démo - Visualisations",
-        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
-        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
-    ],
-    index=[
-        "🏠 Accueil",
-        "📈 Démo - Visualisations",
-        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
-        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
-    ].index(st.session_state["nav"]),
-    key="nav"
+# Panneau latéral
+page = st.sidebar.radio("📁 Navigation :", [
+    "🏠 Accueil",
+    "📈 Démo - Visualisations",
+    "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+    "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+])
+if page== "📈 Démo - Visualisations":
+    st.title(" Overview Analyse et Clustering")
+    
+    file_ = open("cluster.gif", "rb")
+    contents = file_.read()
+    data_url = base64.b64encode(contents).decode("utf-8")
+    file_.close()
+    
+    st.markdown(
+        f'<img src="data:image/gif;base64,{data_url}" alt="cat gif">',
+        unsafe_allow_html=True,
+    )
+    st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
+
+    # Intégration de l'iframe Infogram
+    infogram_html = """
+<div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
+     data-type="interactive" data-title=""></div>
+<script>
+!function(e,n,i,s){
+    var d="InfogramEmbeds";
+    var o=e.getElementsByTagName(n)[0];
+    if(window[d] && window[d].initialized) {
+        window[d].process && window[d].process();
+    } else if(!e.getElementById(i)){
+        var r=e.createElement(n);
+        r.async=1;
+        r.id=i;
+        r.src=s;
+        o.parentNode.insertBefore(r,o);
+    }
+}(document,"script","infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");
+</script>
+
+<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;
+line-height:15px!important;text-align:center;border-top:1px solid #dadada;
+margin:0 30px">
+<br><a href="https://infogram.com" style="color:#989898!important;
+text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>
+"""
+
+    
+    st.components.v1.html(infogram_html, height=800, scrolling=True)
+    
+    # Ajout du crédit Infogram (facultatif)
+    st.markdown(
+        '<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;'
+        'line-height:15px!important;text-align:center;border-top:1px solid #dadada;'
+        'margin:0 30px;width: 640px">'
+        '<br><a href="https://infogram.com" style="color:#989898!important;'
+        'text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>',
+        unsafe_allow_html=True
+    )
+if page == "🏠 Accueil":
+    st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
+    # Utiliser les colonnes de Streamlit pour centrer les éléments
+    col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
+    
+    with col1:
+        st.image("photo.jpg", width=250,use_column_width='always')
+    with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
+        # Titre
+        
+        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br>', unsafe_allow_html=True)
+        
+        
+        
+
+        # Description principale
+        st.markdown(
+            """
+            <div style="text-align: center; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                <p>Data Scientist passionné par les opportunités qu'offrent les progrès en IA.</p>  
+                <p>Je peux mener un projet Data du besoin métier au déploiement, dans une optique "full-stack".</p>
+                <p> Vous pouvez accéder, depuis le menu de gauche, aux différents projets que j'ai pu réaliser, et dont je déploie une partie ici.</p>
+            </div><br>
+            """, 
+            unsafe_allow_html=True
+        )
+
+    # Créer les onglets
+    tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
+
+    # Contenu de chaque onglet
+    with tab3:
+        col1, col2 = st.columns([1,1])
+        with col1:
+            st.markdown(
+                """
+                <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                    <p>Quelques domaines de la Data dont les thématiques me passionnent:</p>
+                    <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                        <li>Études sociologiques et comportementales</li>
+                        <li>Analyse des Gameplays dans le sport ou les jeux vidéo</li>
+                        <li>Projets autour de la cognition et des imageries cérébrales</li>
+                        <li>Domotiques et agents intelligents</li>
+                    </ul>
+                </div><br>
+                """, 
+                unsafe_allow_html=True
+            )
+        with col2:
+            st.markdown(
+                """
+                <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                    <p> D'autres intérêts que j'ai dans la vie : </p>
+                    <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                        <li> Escalade, Boxe, Escrime</li>
+                        <li> Cinéma, Histoire, Philosophie, Cuisine,   </li>
+                        <li> Les nouvelles technologies et leurs implications</li>
+                        <li> Jeux historiques de stratégie </li>
+                    </ul>
+                </div><br>
+                """, 
+                unsafe_allow_html=True
+            )
+
+    with tab1:
+        st.markdown(
+            """
+            <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                <p><strong>Expériences professionnelles:</strong></p>
+                <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                    <li><strong>Data Scientist - Marine Nationale (Tours)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Projet IA de prédiction sur une thématique RH</li>
+                            <li>Traitement, reconstitution et création de données</li>
+                            <li>Analyse BI (Dashboard QlikSense)</li>
+                            <li>Amélioration des processus Data (VBA, UIPATH, Python)</li>
+                            <li>Accompagnement structurel au traitement et à la politique des données</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Autonomie, gestion de projet, écoute des besoins, créativité, rigueur</p>
+                    </li>
+                    <br>
+                    <li><strong>Data Analyst - Gowod (Montpellier)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Analyse et visualisation sur le comportement des utilisateurs d'une application sportive</li>
+                            <li>Analyses RFM / BI, stratégies marketing</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Travail en équipe, vision marketing, appréhension d'une Base de données complexe</p>
+                    </li>
+                    <br>
+                    <li><strong>Assistant pédagogique - Lycée Marcel Sembat (Lyon)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Accompagnement pédagogique des élèves</li>
+                            <li>Projet pédagogique contre le décrochage scolaire</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, sociabilité, pédagogie, patience</p>
+                    </li>
+                    <br>
+                    <li><strong>Remplacements éducatifs - IME Pierre de Lune (Lyon)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Accompagnement quotidien d'enfants en situation d'handicap</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Patience, réactivité, Travail d'équipe, gestion de crise</p>
+                    </li>
+                    <br>
+                    <li><strong>Autres expériences constructives:</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Vendanges</li>
+                            <li>Télévente</li>
+                            <li>Rénovation d'intérieur</li>
+                            <li>Gestion d'une auberge de jeunesse</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Soft Skills principaux :</em> Adaptabilité, ténacité, curiosité</p>
+                    </li>
+                </ul>
+            </div><br>
+            """, 
+            unsafe_allow_html=True
+        )
+
+    with tab2:
+        st.markdown(
+            """
+            <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+                <p><strong>Formations :</strong></p>
+                <ul style="list-style-position: inside; text-align: left; display: inline-block;">
+                    <li><strong>Data Scientist - Marine Nationale / WCS (2023)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Projets de Machine learning: Prédiction, Classification, Clustering, méthodes de Bagging/Boosting, modélisation de séries temporelles, méthodes ensemblistes...</li>
+                            <li>Réseaux de neurones: CNN, RNN, LSTM : Python, TensorFlow, Keras, Scikit-learn</li>
+                            <li>Outils de collaboration et de production : Git, Docker, Terminal</li>
+                            <li>Développement d'application : Django, FastAPI, CSS, HTML</li>
+                            <li>Statistiques et fondamentaux mathématiques : tests statistiques, distributions...</li>
+                            <li>Gestion de projets & Travail d'équipe</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>J'y ai validé une certification professionnelle "Concepteur Développeur d'application" (Niveau 6)</em></p>
+                    </li>
+                    <br>
+                    <li><strong>Data Analyst - WCS (Lyon - 2022)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Codage et traitement de données en Python (mon outil principal) : Pandas, NumPy, Matplotlib, Plotly, SciPy, BeautifulSoup</li>
+                            <li>Développement de différentes applications Streamlit à des fins d'analyses ou de classifications : Scikit-learn, TensorFlow, PyTorch, Streamlit, Datapane</li>
+                            <li>Spécialisation en machine learning : Projet de prédiction du vainqueur d'un duel tennistique depuis des données sur le style de jeu et l'historicité des joueurs</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Formation de 8 mois pour approfondir une base solide de la manipulation des données et de leurs analyses</em></p>
+                    </li>
+                    <br>
+                    <ul style="text-align: center;"><strong>Je me spécialise à ce moment là dans la Data!</strong></ul>
+                    <br>
+                    <li><strong>Master en Science politique - Enquêtes et analyse des processus politiques (Lyon - 2020)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Stage de terrain : écoute active et recueil d'éléments pour une étude</li>
+                            <li>Focales Épistémologie, Sociologie de l'action publique, expertise internationale</li>
+                            <li>Rédaction d'un mémoire de recherche de 130 pages sur le rapport au politique des éducateurs</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>M'a permis d'approfondir l'étude des processus politiques aux échelles structurelles ou individuelles, et leurs implications. Un atout significatif pour situer les acteurs, les enjeux, les institutions dans tous les contextes. Synthétiser, construire une Stratégie.</em></p>
+                    </li>
+                    <br>
+                    <li><strong>Licence en sciences cognitives, réalisée en même temps que le master en science politique (Lyon - 2020)</strong>
+                        <ul style="margin-left: 20px; list-style-type: disc;">
+                            <li>Étude des mécanismes cognitifs : Mémoire, attention, langage, émotions, raisonnement, action</li>
+                            <li>Apports concrets en neuro-imagerie, plasticité cérébrale, neuroprothèses</li>
+                            <li>Programmation : cognition artificielle, Python</li>
+                        </ul>
+                        <p style="margin-left: 20px;"><em>Les apports significatifs de cette discipline émergente m'ont familiarisé avec ses enjeux, ses méthodes et ses ambitions.</em></p>
+                    </li>
+                </ul>
+            </div><br>
+            """, 
+            unsafe_allow_html=True
+        )
+        # Contact en bas de page
+    st.markdown('<br><br><br><h2 style="text-align: center;">Contact</h2>', unsafe_allow_html=True)
+
+    # Centrer les liens et le bouton de téléchargement
+    col1, col2, col3 = st.columns([1, 2, 1])    
+    with col2:
+        st.markdown(
+    '<div style="text-align: center; margin-top: 20px;">'  # Ajoute un espacement au-dessus
+    '<a href="https://www.linkedin.com/in/theobcd/" style="display: block; margin-bottom: 10px;">LinkedIn</a>'  # Chaque lien sur une nouvelle ligne avec un espacement en bas
+    '<a href="https://github.com/Luello" style="display: block; margin-bottom: 10px;">GitHub</a>'  # Ajoute un espacement en bas
+    '</div>', 
+    unsafe_allow_html=True
 )
 
-# =========================
-# UTILS
-# =========================
-def safe_image(path: str, **kw):
-    p = Path(path)
-    kw.setdefault("use_column_width", True)
-    if p.exists():
-        st.image(str(p), **kw)
-    else:
-        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
-
-def render_fullwidth_gif(path: str):
-    """Affiche le GIF en 100% de la largeur disponible, sous le hero."""
-    p = Path(path)
-    if p.exists():
-        with open(path, "rb") as f:
-            data_url = base64.b64encode(f.read()).decode("utf-8")
-        st.markdown(
-            f'<div class="fullgif">'
-            f'  <img src="data:image/gif;base64,{data_url}" alt="aperçu clustering">'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
-                    unsafe_allow_html=True)
-    else:
-        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-
-# =========================
-# PAGE: ACCUEIL
-# =========================
-if page == "🏠 Accueil":
-    # HERO : photo + (titre, pitch, stacks, CTA)
-    st.markdown('<div class="hero">', unsafe_allow_html=True)
-    colL, colR = st.columns([0.9, 1.4])
-
-    with colL:
-        st.markdown('<div class="photo">', unsafe_allow_html=True)
-        safe_image("photo.jpg")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with colR:
-        st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
-        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
-        st.markdown(
-            '<p class="lead">Data scientist polyvalent, j’allie expertise technique et rigueur analytique '
-            'pour fournir des solutions fiables et utiles aux décisions stratégiques.</p>',
-            unsafe_allow_html=True
-        )
-
-        # Stacks (avec Git, Bash, Spark) — dans un wrapper séparé des CTA
-        st.markdown('<div class="stack-wrap">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="badges">'
-            '<span class="badge"><span class="dot py"></span>Python</span>'
-            '<span class="badge"><span class="dot sql"></span>SQL</span>'
-            '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
-            '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
-            '<span class="badge"><span class="dot dja"></span>Django</span>'
-            '<span class="badge"><span class="dot af"></span>Airflow</span>'
-            '<span class="badge"><span class="dot aws"></span>AWS</span>'
-            '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
-            '<span class="badge"><span class="dot emb"></span>Embedding</span>'
-            '<span class="badge"><span class="dot git"></span>Git</span>'
-            '<span class="badge"><span class="dot bash"></span>Bash</span>'
-            '<span class="badge"><span class="dot spark"></span>Spark</span>'
-            '</div>', unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)  # /stack-wrap
-
-        # CTA séparés (plus de superposition avec les badges)
-        MAIL = "mailto:prenom.nom@mail.com"
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"
-        st.markdown(
-            f'<div class="cta">'
-            f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
-            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
-            f'</div>',
-            unsafe_allow_html=True
-        )
-
-    st.markdown('</div>', unsafe_allow_html=True)  # /hero
-
-    # GIF plein largeur SOUS le hero (pas dans la colonne gauche)
-    def render_fullwidth_gif(path: str):
-        p = Path(path)
-        if p.exists():
-            with open(path, "rb") as f:
-                data_url = base64.b64encode(f.read()).decode("utf-8")
-            st.markdown(
-                f'<div class="fullgif"><img src="data:image/gif;base64,{data_url}" alt="aperçu clustering"></div>',
-                unsafe_allow_html=True,
+    # Bouton pour télécharger le CV centré
+    file_path = "CV DATA SCIENTIST- BERNAD THEO.pdf"
+    try:
+        with open(file_path, "rb") as file:
+            st.markdown('<div style="text-align: center; margin-top: 10px;">', unsafe_allow_html=True)  # Nouvelle div pour le bouton
+            st.download_button(
+                label="Télécharger mon CV",
+                data=file,
+                file_name="CV_DATA_SCIENTIST_BERNAD_THEO.pdf",  # nom du fichier à télécharger
+                mime="application/pdf"  # type MIME pour un fichier PDF
             )
-            st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
-                        unsafe_allow_html=True)
-        else:
-            st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-    render_fullwidth_gif("cluster.gif")
-
-    # Cartes sous le GIF : 3 colonnes responsives
-    st.markdown('<div class="info-grid">', unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### Applications métier")
-    st.markdown('<ul class="clean">'
-                '<li>Veille réputation & risques</li>'
-                '<li>Intelligence média / influence</li>'
-                '<li>Analytics audience & produit</li>'
-                '</ul>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### Disponibilités & mobilité")
-    st.markdown(
-        '<div class="pills">'
-        '<span class="pill">Disponibilités : Freelance, CDI</span>'
-        '<span class="pill">Mobilité : France & International</span>'
-        '</div>',
-        unsafe_allow_html=True
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### Types de données maîtrisées")
-    st.markdown(
-        '<div class="pills">'
-        '<span class="pill">Transactionnelles (commerce, ventes, CRM)</span>'
-        '<span class="pill">Textuelles (NLP : titres, descriptions, commentaires)</span>'
-        '<span class="pill">Séries temporelles (logs, métriques, événements)</span>'
-        '<span class="pill">RH / People Analytics (effectifs, mobilité, indicateurs)</span>'
-        '</div>',
-        unsafe_allow_html=True
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)  # /info-grid
-
-# --- PAGE DÉMO VISU ---
-elif page == "📈 Démo - Visualisations":
-    st.header("📈 Démo — Visualisations interactives")
-    st.caption("Exemple synthétique : génération d’un nuage 2D (PCA/TSNE) + clustering KMeans sur des embeddings factices.")
-
-    # Données factices (embeddings 50D)
-    rng = np.random.default_rng(42)
-    X = np.vstack([
-        rng.normal(loc=0.0, scale=0.7, size=(120, 50)),
-        rng.normal(loc=3.5, scale=0.9, size=(120, 50)),
-        rng.normal(loc=-3.0, scale=0.8, size=(120, 50)),
-    ])
-    labels_true = np.array([0]*120 + [1]*120 + [2]*120)
-
-    colA, colB = st.columns(2)
-    with colA:
-        n_comp = st.slider("🎛️ Composantes PCA", 2, 20, 8, help="Dimensionalité avant t-SNE (pré-PCA)")
-        perplex = st.slider("🎚️ Perplexity t-SNE", 5, 60, 30, help="Voisinage pour t-SNE")
-
-    with colB:
-        n_clusters = st.slider("🔀 Nombre de clusters (KMeans)", 2, 8, 3)
-        seed = st.number_input("🌱 Random state", value=42, min_value=0, max_value=9999, step=1)
-
-    # Réduction
-    pca = PCA(n_components=n_comp, random_state=seed)
-    Xp = pca.fit_transform(X)
-    tsne = TSNE(n_components=2, perplexity=perplex, random_state=seed, init="pca")
-    X2 = tsne.fit_transform(Xp)
-
-    # Clustering
-    km = KMeans(n_clusters=n_clusters, n_init="auto", random_state=seed)
-    c = km.fit_predict(X2)
-
-    df = pd.DataFrame({"x": X2[:,0], "y": X2[:,1], "cluster": c.astype(str), "truth": labels_true.astype(str)})
-
-    tab1, tab2 = st.tabs(["🟣 Clusters (KMeans)", "🟢 Labels réels"])
-    with tab1:
-        fig = px.scatter(df, x="x", y="y", color="cluster", opacity=0.85, height=520)
-        st.plotly_chart(fig, use_container_width=True)
-    with tab2:
-        fig2 = px.scatter(df, x="x", y="y", color="truth", opacity=0.85, height=520)
-        st.plotly_chart(fig2, use_container_width=True)
-
-    st.markdown("**Note** : remplace ces embeddings par les tiens (tweets, docs) pour visualiser tes clusters réels.")
-
-# --- PAGE PROJET 1 ---
-elif page == "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
-    st.header("▶️ NLP : Identité politique des influenceurs YouTube")
-    st.write("""
-    **Objectif** : cartographier l'identité politique de chaînes YouTube francophones via NLP (mots-clés, topics, polarité, cadrage).
-    - Scraping des descriptions/titres/transcripts (API YouTube + asynchrone).
-    - Modèles : embeddings (par ex. all-MiniLM), topic modeling (BERTopic), sentiment/polarité, classification supervisée (si labels).
-    - KPIs : cohérence de cadrage, dispersion thématique, similarité entre chaînes, évolution temporelle.
-    """)
-    with st.expander("Démonstration : mini-topic sur corpus jouet"):
-        corpus = [
-            "Immigration et sécurité aux frontières.",
-            "Transition énergétique et politique climatique.",
-            "Réforme des retraites et économie du travail.",
-            "École, éducation et inégalités sociales.",
-            "Écologie, énergie, sobriété.",
-            "Débat sur l'identité nationale et l'immigration.",
-        ]
-        vec = CountVectorizer(max_features=1000, stop_words="french")
-        X = vec.fit_transform(corpus)
-        word_counts = np.asarray(X.sum(axis=0)).ravel()
-        vocab = np.array(vec.get_feature_names_out())
-        top_idx = word_counts.argsort()[::-1][:10]
-        df_wc = pd.DataFrame({"mot": vocab[top_idx], "freq": word_counts[top_idx]})
-        st.dataframe(df_wc, use_container_width=True, hide_index=True)
-
-    st.markdown("""
-    **Livrables visuels** :
-    - Carte 2D des chaînes (UMAP/t-SNE) par similarité sémantique.
-    - Heatmap des thèmes × temps.
-    - Radar de cadrage (sécurité/économie/morale…).
-    """)
-
-# --- PAGE PROJET 2 ---
-elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
-    st.header("🎵 NLP/LLM : Cartographier les artistes FR par les paroles")
-    st.write("""
-    **Objectif** : extraire les thèmes et styles à partir des paroles des artistes français, pour analyser proximités, originalité et narratifs.
-    - Prétraitement : normalisation, lemmatisation, stopwords FR, détection n-grams.
-    - Embeddings sémantiques → clustering d’artistes (KMeans/HDBSCAN).
-    - Indicateurs : richesse lexicale, singularité thématique, tonalité affective.
-    """)
-    with st.expander("Mini démo : lexicalité relative (jouet)"):
-        lyrics = [
-            "Amour et nostalgie, nuit et mélancolie.",
-            "Ville et vitesse, argent et solitude.",
-            "Forêts et rivières, lumière, espoir et retour.",
-            "Amour perdu, larmes et pluie, souvenirs.",
-        ]
-        vec = CountVectorizer(max_features=200, stop_words="french")
-        X = vec.fit_transform(lyrics)
-        vocab = vec.get_feature_names_out()
-        totals = np.asarray(X.sum(axis=0)).ravel()
-        dfx = pd.DataFrame({"mot": vocab, "freq": totals}).sort_values("freq", ascending=False).head(15)
-        st.dataframe(dfx, use_container_width=True, hide_index=True)
-
-    st.markdown("""
-    **Livrables visuels** :
-    - Carte des artistes (UMAP) + clusters.
-    - Nuages de mots par cluster.
-    - Courbes de tonalité affective par période.
-    """)
-
-# =========================
-# FOOTER LÉGER
-# =========================
-st.markdown("---")
-st.caption("© 2025 — Théo Bernad. Portfolio data & NLP.  •  Made with Streamlit.")
+            st.markdown('</div>', unsafe_allow_html=True)  # Ferme la div pour le bouton
+    except FileNotFoundError:
+        st.error("Le fichier n'a pas été trouvé. Vérifiez le chemin et le nom du fichier.")
 
 
 
@@ -992,6 +922,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
