@@ -22,97 +22,97 @@ if "nav" not in st.session_state:
     st.session_state["nav"] = "🏠 Accueil"
 
 # =========================
-# STYLES (thème clair harmonisé)
+# STYLES
 # =========================
 st.markdown("""
 <style>
-/* Theme variables */
 :root{
-  --app-bg:#f6f8fb;      /* app background */
-  --card:#ffffff;        /* cards */
-  --text:#0f172a;        /* slate-900 */
-  --muted:#475569;       /* slate-600 */
-  --border:#e6e9f0;      /* soft border */
-  --chip:#eef2f7;        /* chip bg */
+  --app-bg:#f6f8fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#475569;
+  --border:#e6e9f0;
+  --chip:#eef2f7;
   --chip-text:#0f172a;
-  --primary:#2563eb;     /* blue-600 */
+  --primary:#2563eb;
   --primary-fore:#ffffff;
   --shadow:0 10px 28px rgba(15,23,42,.06);
   --shadow-soft:0 4px 14px rgba(15,23,42,.08);
 }
+
 .stApp {background: linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%) !important;}
-.block-container {padding-top: 1.2rem !important; max-width: 1200px !important;}
+.block-container {padding-top: 1.0rem !important; max-width: 1080px !important; margin: auto !important;}
 #MainMenu, footer {visibility: hidden;}
 
-/* Sidebar radio lisible */
-section[data-testid="stSidebar"] .stRadio > label { font-size: 1.06rem; font-weight: 700; }
-section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
-
-/* HERO card */
+/* HERO */
 .hero {
-  display: grid; grid-template-columns: 1.05fr 1.7fr; gap: 28px;
-  border-radius: 18px; padding: 28px;
+  display: grid; grid-template-columns: 0.95fr 1.35fr; gap: 24px;
+  border-radius: 18px; padding: 24px;
   background: linear-gradient(160deg, var(--card) 0%, #fafbff 85%) !important;
   color: var(--text) !important; border: 1px solid var(--border) !important;
   box-shadow: var(--shadow) !important;
 }
 @media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
 
-.hero h1 { font-size: 2.2rem; margin: 0 0 10px 0; letter-spacing:.2px; color: var(--text) !important; }
-.accent { height: 3px; width: 132px; background: var(--primary);
-          border-radius: 2px; margin: 2px 0 16px 0; }
-.lead { font-size: 1.05rem; line-height: 1.6; color: var(--muted) !important; margin: 0 0 16px 0; }
+.hero h1 { font-size: 2.1rem; margin: 0 0 6px 0; letter-spacing:.2px; color: var(--text) !important; }
+.accent { height: 3px; width: 120px; background: var(--primary);
+          border-radius: 2px; margin: 4px 0 14px 0; }
+.lead { font-size: 1.02rem; line-height: 1.55; color: var(--muted) !important; margin: 0 0 14px 0; }
 
 /* Photo */
 .photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
          box-shadow: var(--shadow-soft); background:#fff; }
 .photo img { width:100%; height:auto; display:block; }
 
-/* Badges stacks */
-.badges { margin-top: 4px; display:flex; flex-wrap:wrap; }
+/* Badges */
+.badges { margin-top: 6px; display:flex; flex-wrap:wrap; }
 .badge {
   display:inline-flex; align-items:center; gap:6px;
   margin: 6px 8px 0 0; padding: 7px 12px;
   border: 1px solid var(--border); border-radius: 999px;
-  background: var(--chip); color: var(--chip-text); font-size: .88rem;
+  background: var(--chip); color: var(--chip-text); font-size: .86rem;
   box-shadow: 0 1px 1px rgba(15,23,42,.04);
 }
 .dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
-.dot.py {background:#16a34a;}     /* green-600 */
-.dot.sql{background:#0ea5e9;}     /* sky-500  */
-.dot.qlk{background:#8b5cf6;}     /* violet    */
-.dot.sta{background:#f59e0b;}     /* amber     */
-.dot.dja{background:#0ea5e9;}
-.dot.af {background:#ef4444;}
-.dot.aws{background:#f97316;}
-.dot.dl {background:#22c55e;}
-.dot.emb{background:#64748b;}
+.dot.py {background:#16a34a;}   .dot.sql{background:#0ea5e9;}   .dot.qlk{background:#8b5cf6;}
+.dot.sta{background:#f59e0b;}   .dot.dja{background:#0ea5e9;}   .dot.af {background:#ef4444;}
+.dot.aws{background:#f97316;}   .dot.dl {background:#22c55e;}   .dot.emb{background:#64748b;}
+.dot.git{background:#f43f5e;}   .dot.bash{background:#22d3ee;}  .dot.spark{background:#fb923c;}
 
-/* CTA boutons */
+/* CTA */
+.cta { display:flex; gap:10px; flex-wrap:wrap; }
 .btn {
-  text-decoration:none; display:inline-block; margin-right:10px; margin-top:12px;
-  padding:11px 16px; border-radius:12px; border:1px solid var(--border);
+  text-decoration:none; display:inline-block;
+  padding:10px 14px; border-radius:12px; border:1px solid var(--border);
   background:#fff; color: var(--text); transition: all .15s ease;
   box-shadow: 0 2px 6px rgba(15,23,42,.05);
+  font-size:.95rem;
 }
 .btn.primary { background: var(--primary); border-color: var(--primary);
                color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
 .btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
 
-/* Sub blocks */
-.rule { height:2px; background: var(--border); border-radius:2px; margin: 14px 0 12px 0; }
-.preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; box-shadow: var(--shadow-soft); }
-.caption { font-size:.92rem; color:#64748b; margin-top:8px; }
+/* Subgrid + cards */
+.rule { height:2px; background: var(--border); border-radius:2px; margin: 16px 0 12px 0; }
+.subgrid { display:grid; grid-template-columns: 1.4fr 1fr; gap:18px; }
+@media (max-width: 960px){ .subgrid { grid-template-columns: 1fr; } }
+.card {
+  border:1px solid var(--border); border-radius:12px; background:#fff;
+  box-shadow: var(--shadow-soft); padding:12px;
+}
+.card h4 { margin: 0 0 8px 0; color: var(--text); }
+.caption { font-size:.9rem; color:#64748b; margin-top:6px; }
 
-/* Pills métriques */
-.pills { margin-top: 12px; }
+/* Pills */
+.group-title { font-weight:700; color:var(--text); margin: 12px 0 6px 0; }
+.pills { display:flex; flex-wrap:wrap; gap:8px; }
 .pill {
-  display:inline-block; margin:6px 8px 0 0; padding:7px 12px; border-radius:999px;
-  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.86rem;
+  display:inline-block; padding:7px 12px; border-radius:999px;
+  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.85rem;
   box-shadow: 0 1px 1px rgba(15,23,42,.04);
 }
 
-/* Clean list */
+/* List */
 ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
 ul.clean li { margin: .35rem 0; }
 </style>
@@ -149,68 +149,25 @@ def safe_image(path: str, **kw):
     else:
         st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
 
-def safe_gif(path: str):
-    """Affiche un GIF dans un cadre preview harmonisé si présent."""
+def gif_base64(path: str):
     p = Path(path)
     if p.exists():
-        st.markdown('<div class="preview">', unsafe_allow_html=True)
-        st.image(str(p), use_column_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-
-# =========================
-# PAGE: DEMO VISUALISATIONS (ta page d’origine)
-# =========================
-if page == "📈 Démo - Visualisations":
-    st.title("Overview Analyse et Clustering")
-
-    try:
-        with open("cluster.gif", "rb") as f:
+        with open(path, "rb") as f:
             data_url = base64.b64encode(f.read()).decode("utf-8")
         st.markdown(
             f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" '
             f'style="max-width:100%; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 6px 16px rgba(15,23,42,.08)">',
             unsafe_allow_html=True,
         )
-    except Exception:
-        st.info("GIF 'cluster.gif' introuvable ; dépose-le à la racine pour l'afficher.")
-
-    st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
-
-    infogram_html = """
-<div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
-     data-type="interactive" data-title=""></div>
-<script>
-!function(e,n,i,s){
-    var d="InfogramEmbeds";
-    var o=e.getElementsByTagName(n)[0];
-    if(window[d] && window[d].initialized) {
-        window[d].process && window[d].process();
-    } else if(!e.getElementById(i)){
-        var r=e.createElement(n);
-        r.async=1;
-        r.id=i;
-        r.src=s;
-        o.parentNode.insertBefore(r,o);
-    }
-}(document,"script","infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");
-</script>
-
-<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;
-line-height:15px!important;text-align:center;border-top:1px solid #dadada;
-margin:0 30px">
-<br><a href="https://infogram.com" style="color:#989898!important;
-text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>
-"""
-    st.components.v1.html(infogram_html, height=800, scrolling=True)
+    else:
+        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
 
 # =========================
-# PAGE: ACCUEIL (hero avec mini-démo cluster.gif)
+# PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
     st.markdown('<div class="hero">', unsafe_allow_html=True)
-    colL, colR = st.columns([1.05, 1.7])
+    colL, colR = st.columns([0.95, 1.35])
 
     with colL:
         st.markdown('<div class="photo">', unsafe_allow_html=True)
@@ -226,7 +183,7 @@ if page == "🏠 Accueil":
             unsafe_allow_html=True
         )
 
-        # Stacks (badges)
+        # Stacks (ajout Git, Bash, Spark)
         st.markdown(
             '<div class="badges">'
             '<span class="badge"><span class="dot py"></span>Python</span>'
@@ -238,6 +195,9 @@ if page == "🏠 Accueil":
             '<span class="badge"><span class="dot aws"></span>AWS</span>'
             '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
             '<span class="badge"><span class="dot emb"></span>Embedding</span>'
+            '<span class="badge"><span class="dot git"></span>Git</span>'
+            '<span class="badge"><span class="dot bash"></span>Bash</span>'
+            '<span class="badge"><span class="dot spark"></span>Spark</span>'
             '</div>', unsafe_allow_html=True
         )
 
@@ -245,47 +205,64 @@ if page == "🏠 Accueil":
         MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
         LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
         st.markdown(
+            f'<div class="cta">'
             f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
-            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>',
+            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
+            f'</div>',
             unsafe_allow_html=True
         )
 
         st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
 
-        # Sous-bloc: mini-démo = cluster.gif à gauche, use-cases + bouton à droite
-        col_prev, col_use = st.columns([1.6, 1])
-        with col_prev:
-            safe_gif("cluster.gif")
-            st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
-                        unsafe_allow_html=True)
+        # Sous-grille équilibrée : mini-démo (GIF) + applications
+        st.markdown('<div class="subgrid">', unsafe_allow_html=True)
 
-        with col_use:
-            st.markdown("**Applications métier**")
-            st.markdown('<ul class="clean">'
-                        '<li>Veille réputation & risques</li>'
-                        '<li>Intelligence média / influence</li>'
-                        '<li>Analytics audience & produit</li>'
-                        '</ul>', unsafe_allow_html=True)
-            if st.button("👉 Voir la démo de la cartographie"):
-                st.session_state["nav"] = "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube"
-                st.rerun()
+        # Carte 1 : mini démo
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("<h4>Cartographie narrative (NLP)</h4>", unsafe_allow_html=True)
+        gif_base64("cluster.gif")
+        st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Carte 2 : applications
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown("<h4>Applications métier</h4>", unsafe_allow_html=True)
+        st.markdown('<ul class="clean">'
+                    '<li>Veille réputation & risques</li>'
+                    '<li>Intelligence média / influence</li>'
+                    '<li>Analytics audience & produit</li>'
+                    '</ul>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)  # /subgrid
 
         st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
 
-        # Métriques (pills)
+        # Métriques + Types de données
+        st.markdown('<div class="group-title">Livrables & Volumétrie</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="pills">'
-            '<span class="pill">RH (Marine) & Client Analytics (App)</span>'
             '<span class="pill">7 dashboards / rapports livrés</span>'
             '<span class="pill">300k+ lignes intégrées</span>'
-            '<span class="pill">2 pipelines NLP/embeddings</span>'
+            '<span class="pill">2 pipelines NLP / embeddings</span>'
             '<span class="pill">10+ sources agrégées</span>'
             '</div>', unsafe_allow_html=True
         )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="group-title">Types de données maîtrisées</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="pills">'
+            '<span class="pill">Transactionnelles (commerce, ventes, CRM)</span>'
+            '<span class="pill">Textuelles (NLP : titres, descriptions, commentaires)</span>'
+            '<span class="pill">Séries temporelles (logs, métriques, événements)</span>'
+            '<span class="pill">RH / People Analytics (effectifs, mobilité, indicateurs)</span>'
+            '</div>', unsafe_allow_html=True
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)  # /hero
 
     st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
+
 
 # =========================
 # PAGE: PROJET NLP (placeholder)
@@ -917,6 +894,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
