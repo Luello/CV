@@ -11,48 +11,160 @@ import plotly.express as px
 import re
 from collections import Counter
 import base64
+from pathlib import Path
 
-st.set_page_config(layout="wide")
+# =========================
+# CONFIG APP
+# =========================
+st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
+
+# Navigation pilotable (pour ouvrir une page via un bouton)
+if "nav" not in st.session_state:
+    st.session_state["nav"] = "🏠 Accueil"
+
+# =========================
+# STYLES (thème clair)
+# =========================
 st.markdown("""
-    <style>
-        /* Agrandir le texte dans les boutons radio de la sidebar */
-        section[data-testid="stSidebar"] .stRadio > label {
-            font-size: 1.2rem;
-            font-weight: 500;
-        }
+<style>
+:root{
+  --bg:#f8fafc;          /* slate-50 */
+  --card:#ffffff;        /* white */
+  --text:#0f172a;        /* slate-900 */
+  --muted:#475569;       /* slate-600 */
+  --border:#e5e7eb;      /* gray-200 */
+  --chip:#eef2f7;        /* light chip */
+  --chip-text:#0f172a;
+  --primary:#2563eb;     /* blue-600 */
+  --primary-fore:#ffffff;
+}
+.stApp {background: var(--bg) !important;}
+.block-container {padding-top: 1.2rem !important; max-width: 1200px !important;}
+#MainMenu, footer {visibility: hidden;}
 
-        /* Bonus : icônes emoji un peu plus espacées */
-        section[data-testid="stSidebar"] .stRadio div {
-            padding-top: 0.4rem;
-            padding-bottom: 0.4rem;
-        }
-    </style>
+section[data-testid="stSidebar"] .stRadio > label { font-size: 1.06rem; font-weight: 700; }
+section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
+
+/* HERO card clair */
+.hero {
+  display: grid; grid-template-columns: 1.05fr 1.7fr; gap: 28px;
+  border-radius: 18px; padding: 28px;
+  background: linear-gradient(135deg, var(--card) 0%, #fbfbfb 70%) !important;
+  color: var(--text) !important; border: 1px solid var(--border) !important;
+  box-shadow: 0 10px 30px rgba(15,23,42,.06) !important;
+}
+@media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
+
+.hero h1 { font-size: 2.15rem; margin: 0 0 8px 0; letter-spacing: .2px; color: var(--text) !important; }
+.accent { height: 3px; width: 120px; background: var(--primary); border-radius: 2px; margin: 6px 0 14px 0; }
+.lead { font-size: 1.06rem; line-height: 1.55; color: var(--muted) !important; margin: 2px 0 16px 0; }
+
+/* Photo */
+.photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
+         box-shadow: 0 8px 24px rgba(15,23,42,.08); background:#fff; }
+.photo img { width:100%; height:auto; display:block; }
+
+/* Badges stacks */
+.badges { margin-top: 2px; }
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  margin: 6px 8px 0 0; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--chip); color: var(--chip-text); font-size: .88rem;
+}
+.dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
+.dot.py {background:#16a34a;}     /* green-600 */
+.dot.sql{background:#0ea5e9;}     /* sky-500  */
+.dot.qlk{background:#8b5cf6;}     /* violet   */
+.dot.sta{background:#f59e0b;}     /* amber    */
+.dot.dja{background:#0ea5e9;}
+.dot.af {background:#ef4444;}
+.dot.aws{background:#f97316;}
+.dot.dl {background:#22c55e;}
+.dot.emb{background:#64748b;}
+
+/* CTA boutons */
+.btn {
+  text-decoration:none; display:inline-block; margin-right:10px; margin-top:12px;
+  padding:11px 16px; border-radius:12px; border:1px solid var(--border);
+  background:#fff; color: var(--text); transition: all .15s ease;
+  box-shadow: 0 2px 6px rgba(15,23,42,.05);
+}
+.btn.primary { background: var(--primary); border-color: var(--primary);
+               color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
+.btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
+
+/* Sous-blocs */
+.rule { height:2px; background: var(--border); border-radius:2px; margin: 14px 0; }
+.preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; }
+.caption { font-size:.92rem; color:#64748b; margin-top:6px; }
+
+/* Pills métriques */
+.pills { margin-top: 8px; }
+.pill {
+  display:inline-block; margin:6px 8px 0 0; padding:7px 12px; border-radius:999px;
+  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.86rem;
+}
+
+/* List simple */
+ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
+ul.clean li { margin: .25rem 0; }
+</style>
 """, unsafe_allow_html=True)
-# Configuration de la page en mode large
 
+# =========================
+# NAVIGATION
+# =========================
+page = st.sidebar.radio(
+    "📁 Navigation :",
+    [
+        "🏠 Accueil",
+        "📈 Démo - Visualisations",
+        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+    ],
+    index=[
+        "🏠 Accueil",
+        "📈 Démo - Visualisations",
+        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+    ].index(st.session_state["nav"]),
+    key="nav"
+)
 
-# Panneau latéral
-page = st.sidebar.radio("📁 Navigation :", [
-    "🏠 Accueil",
-    "📈 Démo - Visualisations",
-    "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
-    "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
-])
-if page== "📈 Démo - Visualisations":
-    st.title(" Overview Analyse et Clustering")
-    
-    file_ = open("cluster.gif", "rb")
-    contents = file_.read()
-    data_url = base64.b64encode(contents).decode("utf-8")
-    file_.close()
-    
-    st.markdown(
-        f'<img src="data:image/gif;base64,{data_url}" alt="cat gif">',
-        unsafe_allow_html=True,
-    )
+# =========================
+# UTILS
+# =========================
+def safe_image(path: str, **kw):
+    """Affiche une image si elle existe, sinon un message propre."""
+    p = Path(path)
+    kw.setdefault("use_column_width", True)
+    if p.exists():
+        st.image(str(p), **kw)
+    else:
+        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine de l'app.")
+
+# =========================
+# PAGE: DEMO VISUALISATIONS (reprend ton code)
+# =========================
+if page == "📈 Démo - Visualisations":
+    st.title("Overview Analyse et Clustering")
+
+    # GIF (ton approche)
+    try:
+        with open("cluster.gif", "rb") as f:
+            data_url = base64.b64encode(f.read()).decode("utf-8")
+        st.markdown(
+            f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" '
+            f'style="max-width:100%; border-radius:8px; border:1px solid #e5e7eb;">',
+            unsafe_allow_html=True,
+        )
+    except Exception:
+        st.info("GIF 'cluster.gif' introuvable ; dépose-le à la racine pour l'afficher.")
+
     st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
 
-    # Intégration de l'iframe Infogram
+    # Infogram (identique à ton code)
     infogram_html = """
 <div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
      data-type="interactive" data-title=""></div>
@@ -78,45 +190,94 @@ margin:0 30px">
 <br><a href="https://infogram.com" style="color:#989898!important;
 text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>
 """
-
-    
     st.components.v1.html(infogram_html, height=800, scrolling=True)
-    
-    # Ajout du crédit Infogram (facultatif)
-    st.markdown(
-        '<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;'
-        'line-height:15px!important;text-align:center;border-top:1px solid #dadada;'
-        'margin:0 30px;width: 640px">'
-        '<br><a href="https://infogram.com" style="color:#989898!important;'
-        'text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>',
-        unsafe_allow_html=True
-    )
-if page == "🏠 Accueil":
-    st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
-    # Utiliser les colonnes de Streamlit pour centrer les éléments
-    col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
-    
-    with col1:
-        st.image("photo.jpg", width=250,use_column_width='always')
-    with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
-        # Titre
-        
-        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br>', unsafe_allow_html=True)
-        
-        
-        
 
-        # Description principale
+# =========================
+# PAGE: ACCUEIL (hero refait)
+# =========================
+if page == "🏠 Accueil":
+    st.markdown('<div class="hero">', unsafe_allow_html=True)
+    colL, colR = st.columns([1.05, 1.7])
+
+    with colL:
+        st.markdown('<div class="photo">', unsafe_allow_html=True)
+        safe_image("photo.jpg")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with colR:
+        st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
+        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(
-            """
-            <div style="text-align: center; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                <p>Data Scientist passionné par les opportunités qu'offrent les progrès en IA.</p>  
-                <p>Je peux mener un projet Data du besoin métier au déploiement, dans une optique "full-stack".</p>
-                <p> Vous pouvez accéder, depuis le menu de gauche, aux différents projets que j'ai pu réaliser, et dont je déploie une partie ici.</p>
-            </div><br>
-            """, 
+            '<p class="lead">Data scientist polyvalent, j’allie expertise technique et rigueur analytique '
+            'pour fournir des solutions fiables et utiles aux décisions stratégiques.</p>',
             unsafe_allow_html=True
         )
+
+        # Stacks
+        st.markdown(
+            '<div class="badges">'
+            '<span class="badge"><span class="dot py"></span>Python</span>'
+            '<span class="badge"><span class="dot sql"></span>SQL</span>'
+            '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
+            '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
+            '<span class="badge"><span class="dot dja"></span>Django</span>'
+            '<span class="badge"><span class="dot af"></span>Airflow</span>'
+            '<span class="badge"><span class="dot aws"></span>AWS</span>'
+            '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
+            '<span class="badge"><span class="dot emb"></span>Embedding</span>'
+            '</div>', unsafe_allow_html=True
+        )
+
+        # CTA
+        MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
+        st.markdown(
+            f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
+            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>',
+            unsafe_allow_html=True
+        )
+
+        st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
+
+        # Sous-bloc: aperçu (optionnel) + use-cases + bouton projet
+        col_prev, col_use = st.columns([1.6, 1])
+        with col_prev:
+            # Mets un fichier "apercu_carto.png" si tu veux un visuel ici
+            if Path("apercu_carto.png").exists():
+                st.markdown('<div class="preview">', unsafe_allow_html=True)
+                st.image("apercu_carto.png", use_column_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
+                            unsafe_allow_html=True)
+            else:
+                st.caption("Cartographie narrative (NLP) — aperçu 15s")
+
+        with col_use:
+            st.markdown("**Applications métier**")
+            st.markdown('<ul class="clean">'
+                        '<li>Veille réputation & risques</li>'
+                        '<li>Intelligence média / influence</li>'
+                        '<li>Analytics audience & produit</li>'
+                        '</ul>', unsafe_allow_html=True)
+            if st.button("👉 Voir la démo de la cartographie"):
+                st.session_state["nav"] = "▶️ NLP: Analyse de l\'identité politique des influenceurs Youtube"
+                st.rerun()
+
+        st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
+
+        # Métriques (pills)
+        st.markdown(
+            '<div class="pills">'
+            '<span class="pill">RH (Marine) & Client Analytics (App)</span>'
+            '<span class="pill">7 dashboards / rapports livrés</span>'
+            '<span class="pill">300k+ lignes intégrées</span>'
+            '<span class="pill">2 pipelines NLP/embeddings</span>'
+            '<span class="pill">10+ sources agrégées</span>'
+            '</div>', unsafe_allow_html=True
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # Créer les onglets
     tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
 
@@ -732,6 +893,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
