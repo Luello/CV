@@ -43,7 +43,7 @@ st.markdown("""
 .block-container {padding-top: 1.0rem !important; max-width: 1080px !important; margin: auto !important;}
 #MainMenu, footer {visibility: hidden;}
 
-/* Sidebar radio lisible */
+/* Sidebar */
 section[data-testid="stSidebar"] .stRadio > label { font-size: 1.04rem; font-weight: 700; }
 section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
 
@@ -56,20 +56,15 @@ section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
   box-shadow: var(--shadow) !important;
 }
 @media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
-
 .hero h1 { font-size: 2.1rem; margin: 0 0 6px 0; letter-spacing:.2px; color: var(--text) !important; }
 .accent { height: 3px; width: 120px; background: var(--primary);
           border-radius: 2px; margin: 4px 0 14px 0; }
 .lead { font-size: 1.02rem; line-height: 1.55; color: var(--muted) !important; margin: 0 0 14px 0; }
 
-/* Colonne gauche (photo + gif) */
+/* Colonne gauche (photo) */
 .photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
          box-shadow: var(--shadow-soft); background:#fff; }
 .photo img { width:100%; height:auto; display:block; }
-.gifwrap {
-  margin-top:12px; border:1px solid var(--border); border-radius:12px; overflow:hidden;
-  box-shadow: var(--shadow-soft); background:#fff;
-}
 
 /* Badges */
 .badges { margin-top: 6px; display:flex; flex-wrap:wrap; }
@@ -99,11 +94,24 @@ section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
                color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
 .btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
 
-/* Sections */
-.rule { height:2px; background: var(--border); border-radius:2px; margin: 16px 0 12px 0; }
-.section { border:1px solid var(--border); background:#fff; border-radius:12px;
-           box-shadow: var(--shadow-soft); padding:16px; margin-top:14px; }
-.section h3 { margin-top:0; color:var(--text); }
+/* GIF plein largeur (sous le hero) */
+.fullgif {
+  margin: 16px 0 8px 0; border:1px solid var(--border); border-radius:14px; overflow:hidden;
+  box-shadow: var(--shadow-soft); background:#fff;
+}
+.fullgif img { width:100%; display:block; }
+.caption { font-size:.9rem; color:#64748b; margin-top:6px; text-align:center; }
+
+/* Bloc sous le GIF : 2 colonnes harmonisées */
+.below {
+  display:grid; grid-template-columns: 1.1fr 0.9fr; gap:18px; margin-top: 16px;
+}
+@media (max-width: 960px){ .below { grid-template-columns: 1fr; } }
+.card {
+  border:1px solid var(--border); border-radius:12px; background:#fff;
+  box-shadow: var(--shadow-soft); padding:16px;
+}
+.card h3 { margin:0 0 10px 0; color:var(--text); }
 
 /* Pills */
 .pills { display:flex; flex-wrap:wrap; gap:8px; }
@@ -116,7 +124,6 @@ section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
 /* List */
 ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
 ul.clean li { margin: .35rem 0; }
-.caption { font-size:.9rem; color:#64748b; margin-top:6px; text-align:center; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,15 +158,15 @@ def safe_image(path: str, **kw):
     else:
         st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
 
-def gif_base64_into_container(path: str):
-    """Affiche un GIF en base64 dans un conteneur harmonisé (utilisé sous la photo)."""
+def render_fullwidth_gif(path: str):
+    """Affiche le GIF en 100% de la largeur disponible, sous le hero."""
     p = Path(path)
     if p.exists():
         with open(path, "rb") as f:
             data_url = base64.b64encode(f.read()).decode("utf-8")
         st.markdown(
-            f'<div class="gifwrap">'
-            f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" style="width:100%; display:block;">'
+            f'<div class="fullgif">'
+            f'  <img src="data:image/gif;base64,{data_url}" alt="aperçu clustering">'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -172,7 +179,7 @@ def gif_base64_into_container(path: str):
 # PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
-    # HERO (photo + gif en dessous) / (intro + stacks + CTA)
+    # HERO (photo / intro / stacks / CTA)
     st.markdown('<div class="hero">', unsafe_allow_html=True)
     colL, colR = st.columns([0.9, 1.4])
 
@@ -180,8 +187,6 @@ if page == "🏠 Accueil":
         st.markdown('<div class="photo">', unsafe_allow_html=True)
         safe_image("photo.jpg")
         st.markdown('</div>', unsafe_allow_html=True)
-        # 👉 GIF placé SOUS la photo (même colonne)
-        gif_base64_into_container("cluster.gif")
 
     with colR:
         st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
@@ -223,9 +228,14 @@ if page == "🏠 Accueil":
 
     st.markdown('</div>', unsafe_allow_html=True)  # /hero
 
-    # ===== Sections sous le hero =====
-    # Applications métier
-    st.markdown('<div class="section">', unsafe_allow_html=True)
+    # GIF PLEIN LARGEUR (100% conteneur)
+    render_fullwidth_gif("cluster.gif")
+
+    # BLOC SOUS-GIF : 2 colonnes → Applications | Disponibilités
+    st.markdown('<div class="below">', unsafe_allow_html=True)
+
+    # Colonne 1 : Applications
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Applications métier")
     st.markdown('<ul class="clean">'
                 '<li>Veille réputation & risques</li>'
@@ -234,32 +244,22 @@ if page == "🏠 Accueil":
                 '</ul>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Disponibilités (nouvelle section)
-    st.markdown('<div class="section">', unsafe_allow_html=True)
+    # Colonne 2 : Disponibilités
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Disponibilités & mobilité")
     st.markdown(
         '<div class="pills">'
         '<span class="pill">Disponibilités : Freelance, CDI</span>'
         '<span class="pill">Mobilité : France & International</span>'
-        '</div>', unsafe_allow_html=True
+        '</div>',
+        unsafe_allow_html=True
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Livrables & volumétrie
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown("### Livrables & volumétrie")
-    st.markdown(
-        '<div class="pills">'
-        '<span class="pill">7 dashboards / rapports livrés</span>'
-        '<span class="pill">300k+ lignes intégrées</span>'
-        '<span class="pill">2 pipelines NLP / embeddings</span>'
-        '<span class="pill">10+ sources agrégées</span>'
-        '</div>', unsafe_allow_html=True
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # /below
 
-    # Types de données
-    st.markdown('<div class="section">', unsafe_allow_html=True)
+    # Types de données maîtrisées (une seule ligne de tags)
+    st.markdown('<div class="card" style="margin-top:16px;">', unsafe_allow_html=True)
     st.markdown("### Types de données maîtrisées")
     st.markdown(
         '<div class="pills">'
@@ -267,12 +267,10 @@ if page == "🏠 Accueil":
         '<span class="pill">Textuelles (NLP : titres, descriptions, commentaires)</span>'
         '<span class="pill">Séries temporelles (logs, métriques, événements)</span>'
         '<span class="pill">RH / People Analytics (effectifs, mobilité, indicateurs)</span>'
-        '</div>', unsafe_allow_html=True
+        '</div>',
+        unsafe_allow_html=True
     )
     st.markdown('</div>', unsafe_allow_html=True)
-
-    st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
-
 # --- PAGE DÉMO VISU ---
 elif page == "📈 Démo - Visualisations":
     st.header("📈 Démo — Visualisations interactives")
@@ -1019,6 +1017,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
