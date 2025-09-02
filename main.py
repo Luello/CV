@@ -154,13 +154,13 @@ page = st.sidebar.radio(
     "📁 Navigation :",
     [
         "🏠 Accueil",
-        "📈 Démo - Visualisations",
+        #"📈 Démo - Visualisations",
         "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
         "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
     ],
     index=[
         "🏠 Accueil",
-        "📈 Démo - Visualisations",
+        #"📈 Démo - Visualisations",
         "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
         "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
     ].index(st.session_state["nav"]),
@@ -324,15 +324,6 @@ if page == "🏠 Accueil":
 
     # ===== CARTES MÉTIER (alignées) =====
     st.markdown('<div class="info-grid">', unsafe_allow_html=True)
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### Applications métier")
-    st.markdown('<ul class="clean">'
-                '<li>Veille réputation & risques</li>'
-                '<li>Intelligence média / influence</li>'
-                '<li>Analytics audience & produit</li>'
-                '</ul>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Disponibilités & mobilité")
@@ -1164,6 +1155,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
