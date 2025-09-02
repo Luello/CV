@@ -161,7 +161,7 @@ page = st.sidebar.radio(
     index=[
         "🏠 Accueil",
         #"📈 Démo - Visualisations",
-        "▶️ NLP: Cartographie politique des Youtubeurse",
+        "▶️ NLP: Cartographie politique des Youtubeurs",
         "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
     ].index(st.session_state["nav"]),
     key="nav"
@@ -1002,6 +1002,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
