@@ -269,23 +269,23 @@ if page == "🏠 Accueil":
             '</div>', unsafe_allow_html=True
         )
         with st.spinner("🔄 Veuillez patienter pendant le chargement de la visualisation"):
-        # rendu du GIF en base64 (largeur totalement fluide)
-        def render_fullwidth_gif(path: str):
-            p = Path(path)
-            if p.exists():
-                with open(path, "rb") as f:
-                    data_url = base64.b64encode(f.read()).decode("utf-8")
-                st.markdown(
-                    f'<div class="viz-frame"><img src="data:image/gif;base64,{data_url}" '
-                    f'style="width:100%; display:block;"></div>',
-                    unsafe_allow_html=True,
-                )
-                st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
-                            unsafe_allow_html=True)
-            else:
-                st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-        render_fullwidth_gif("cluster.gif")
-        st.markdown('</div>', unsafe_allow_html=True)  # /viz-card
+            # rendu du GIF en base64 (largeur totalement fluide)
+            def render_fullwidth_gif(path: str):
+                p = Path(path)
+                if p.exists():
+                    with open(path, "rb") as f:
+                        data_url = base64.b64encode(f.read()).decode("utf-8")
+                    st.markdown(
+                        f'<div class="viz-frame"><img src="data:image/gif;base64,{data_url}" '
+                        f'style="width:100%; display:block;"></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
+                                unsafe_allow_html=True)
+                else:
+                    st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
+            render_fullwidth_gif("cluster.gif")
+            st.markdown('</div>', unsafe_allow_html=True)  # /viz-card
         st.success("✅")
     # Carte B : Infogram (titre + hint “scroller” au-dessus)
     with st.container():
@@ -543,9 +543,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
     st.title("📊 Cartographie politique des influenceurs YouTube")
     
     # Afficher un message d'attente stylisé
-    with st.status("🔄 **Calcul en cours...** Veuillez patienter pendant le chargement de la visualisation", expanded=True) as status:
-        st.write("📥 Chargement des données...")
-        time.sleep(0.5)
+    with st.spinner("🔄Veuillez patienter pendant le chargement de la visualisation"):
         
         # Chargement des données avec cache pour optimiser les performances
         @st.cache_data
@@ -566,13 +564,11 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
             
             return df
         
-        st.write("🧠 Préparation des variables...")
-        time.sleep(0.3)
+
         
         df = load_data()
         
-        st.write("📊 Encodage des données catégorielles...")
-        time.sleep(0.3)
+     
         
         # Colonnes numériques à inclure
         numerical_cols = ["charge_politique_latente", "index_fanatisme"]
@@ -595,8 +591,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
             except Exception as e:
                 st.warning(f"Problème d'encodage pour {col} : {e}")
         
-        st.write("⚙️ Construction de la matrice d'analyse...")
-        time.sleep(0.3)
+     
         
         # Construction de la matrice finale
         X_num = df[numerical_cols].fillna(0).reset_index(drop=True)
@@ -606,9 +601,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         # Normalisation
         X_scaled = StandardScaler().fit_transform(X_all)
         
-        st.write("🧭 Calcul des positions avec UMAP...")
-        time.sleep(0.5)
-        
+  
         # UMAP
         umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
         embedding = umap.fit_transform(X_scaled)
@@ -621,9 +614,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
             "charge_politique_latente": df["charge_politique_latente"]
         })
         
-        st.write("🎨 Génération de la visualisation...")
-        time.sleep(0.5)
-        
+   
         # Graphique Plotly
         fig = px.scatter(
             df_visu,
@@ -637,7 +628,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         fig.update_traces(textposition='top center', marker=dict(size=10))
         fig.update_layout(height=600, showlegend=False)
         
-        status.update(label="✅ Analyse terminée! Visualisation prête.", state="complete")
+        st.success("✅ Chargement complété.")
     
     # Afficher le graphique
     st.plotly_chart(fig, use_column_width=True)
@@ -1004,6 +995,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
