@@ -1,126 +1,140 @@
-import streamlit as st
+import os
+import re
+import base64
+from collections import Counter
+
+import numpy as np
 import pandas as pd
+import streamlit as st
+import plotly.express as px
 import plotly.graph_objects as go
+
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import PCA
-import numpy as np
-import ast
-import plotly.express as px
-import re
-from collections import Counter
-import base64
-from pathlib import Path
 
 # =========================
-# CONFIG APP
+# CONFIG GLOBALE
 # =========================
 st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
 
-if "nav" not in st.session_state:
-    st.session_state["nav"] = "🏠 Accueil"
-
 # =========================
-# STYLES
+# STYLES (UNIFIÉS)
 # =========================
 st.markdown("""
 <style>
-:root{
-  --app-bg:#f6f8fb;
-  --card:#ffffff;
-  --text:#0f172a;
-  --muted:#475569;
-  --border:#e6e9f0;
-  --chip:#eef2f7;
-  --chip-text:#0f172a;
-  --primary:#2563eb;
-  --primary-fore:#ffffff;
-  --shadow:0 10px 28px rgba(15,23,42,.06);
-  --shadow-soft:0 4px 14px rgba(15,23,42,.08);
-}
-
-.stApp {background: linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%) !important;}
-.block-container {padding-top: 1.0rem !important; max-width: 1080px !important; margin: auto !important;}
+/* Nettoyage */
 #MainMenu, footer {visibility: hidden;}
+.block-container {padding-top: 1rem;}
 
-/* HERO */
-.hero {
-  display: grid; grid-template-columns: 0.95fr 1.35fr; gap: 24px;
-  border-radius: 18px; padding: 24px;
-  background: linear-gradient(160deg, var(--card) 0%, #fafbff 85%) !important;
-  color: var(--text) !important; border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow) !important;
+/* Palette claire */
+:root{
+  --text:#111827;        /* slate-900 */
+  --muted:#475569;       /* slate-600 */
+  --chip:#e5e7eb;        /* gray-200 */
+  --chipText:#111827;
+  --border:#e5e7eb;      /* gray-200 */
+  --card:#ffffff;        /* white */
+  --cardGrad:#fafafa;    /* very light */
+  --primary:#2563eb;     /* blue-600 */
+  --primaryText:#ffffff;
 }
-@media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
 
-.hero h1 { font-size: 2.1rem; margin: 0 0 6px 0; letter-spacing:.2px; color: var(--text) !important; }
-.accent { height: 3px; width: 120px; background: var(--primary);
-          border-radius: 2px; margin: 4px 0 14px 0; }
-.lead { font-size: 1.02rem; line-height: 1.55; color: var(--muted) !important; margin: 0 0 14px 0; }
+/* Sidebar radio lisible */
+section[data-testid="stSidebar"] .stRadio > label { font-size: 1.05rem; font-weight: 600; }
+section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
+
+/* HERO clair */
+.hero {
+  border-radius: 18px; padding: 26px;
+  background: linear-gradient(135deg, var(--card) 0%, var(--cardGrad) 80%);
+  color: var(--text); border: 1px solid var(--border);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+}
+.hero h1 {font-size: 2.0rem; margin: 0 0 6px 0; letter-spacing: .2px; color: var(--text);}
+.hero p.lead {font-size: 1.02rem; color: var(--muted); margin: 6px 0 14px 0; line-height: 1.55;}
 
 /* Photo */
-.photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
-         box-shadow: var(--shadow-soft); background:#fff; }
-.photo img { width:100%; height:auto; display:block; }
+.photo img {border-radius: 14px; width: 100%; height:auto; object-fit:cover; border:1px solid var(--border);}
 
-/* Badges */
-.badges { margin-top: 6px; display:flex; flex-wrap:wrap; }
-.badge {
-  display:inline-flex; align-items:center; gap:6px;
-  margin: 6px 8px 0 0; padding: 7px 12px;
-  border: 1px solid var(--border); border-radius: 999px;
-  background: var(--chip); color: var(--chip-text); font-size: .86rem;
-  box-shadow: 0 1px 1px rgba(15,23,42,.04);
+/* Badges stacks */
+.badges span{
+  display:inline-block; margin: 6px 8px 0 0; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: 999px; font-size:.88rem; color:var(--chipText);
+  background: #f8fafc; /* slate-50 */
 }
-.dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
-.dot.py {background:#16a34a;}   .dot.sql{background:#0ea5e9;}   .dot.qlk{background:#8b5cf6;}
-.dot.sta{background:#f59e0b;}   .dot.dja{background:#0ea5e9;}   .dot.af {background:#ef4444;}
-.dot.aws{background:#f97316;}   .dot.dl {background:#22c55e;}   .dot.emb{background:#64748b;}
-.dot.git{background:#f43f5e;}   .dot.bash{background:#22d3ee;}  .dot.spark{background:#fb923c;}
 
-/* CTA */
-.cta { display:flex; gap:10px; flex-wrap:wrap; }
-.btn {
-  text-decoration:none; display:inline-block;
-  padding:10px 14px; border-radius:12px; border:1px solid var(--border);
-  background:#fff; color: var(--text); transition: all .15s ease;
-  box-shadow: 0 2px 6px rgba(15,23,42,.05);
-  font-size:.95rem;
+/* CTA clair */
+.cta a{
+  text-decoration:none; display:inline-block; margin-right:10px; margin-top:10px;
+  padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#ffffff; color:var(--text);
+  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
 }
-.btn.primary { background: var(--primary); border-color: var(--primary);
-               color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
-.btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
+.cta a.primary{background:var(--primary); border-color:var(--primary); color:var(--primaryText);}
+.cta a:hover{transform: translateY(-1px); filter:brightness(1.04); box-shadow:0 4px 14px rgba(37,99,235,.18);}
 
-/* Subgrid + cards */
-.rule { height:2px; background: var(--border); border-radius:2px; margin: 16px 0 12px 0; }
-.subgrid { display:grid; grid-template-columns: 1.4fr 1fr; gap:18px; }
-@media (max-width: 960px){ .subgrid { grid-template-columns: 1fr; } }
+/* Preview bloc (clair) */
+.preview { margin-top: 12px; border-radius: 12px; overflow: hidden; border:1px solid var(--border); background:#ffffff; }
+.preview img {width:100%; display:block;}
+.caption {font-size:.92rem; color:#64748b; margin-top:6px;}  /* slate-500 */
+
+/* Pills métriques (clair) */
+.pills span{
+  display:inline-block; margin:6px 8px 0 0; padding:6px 10px; border-radius:999px;
+  background: #f1f5f9; /* slate-100 */ border:1px solid var(--border); font-size:.85rem; color:#334155;
+}
+
+/* Divider subtil */
+.divider {height:1px; background: var(--border); margin: 14px 0 10px 0; border-radius:1px;}
+
+/* Titles */
+h2, h3 { color: var(--text); }
+
+/* Cards simples */
 .card {
-  border:1px solid var(--border); border-radius:12px; background:#fff;
-  box-shadow: var(--shadow-soft); padding:12px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+  background:#fff;
 }
-.card h4 { margin: 0 0 8px 0; color: var(--text); }
-.caption { font-size:.9rem; color:#64748b; margin-top:6px; }
-
-/* Pills */
-.group-title { font-weight:700; color:var(--text); margin: 12px 0 6px 0; }
-.pills { display:flex; flex-wrap:wrap; gap:8px; }
-.pill {
-  display:inline-block; padding:7px 12px; border-radius:999px;
-  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.85rem;
-  box-shadow: 0 1px 1px rgba(15,23,42,.04);
-}
-
-/* List */
-ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
-ul.clean li { margin: .35rem 0; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# NAVIGATION
+# HELPERS
 # =========================
+def file_exists(path: str) -> bool:
+    try:
+        return os.path.isfile(path) and os.path.getsize(path) > 0
+    except Exception:
+        return False
+
+@st.cache_data(show_spinner=False)
+def load_image_bytes(path: str) -> bytes | None:
+    if not file_exists(path):
+        return None
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except Exception:
+        return None
+
+def download_button_from_file(path: str, label: str, mime: str = "application/octet-stream"):
+    if not file_exists(path):
+        st.caption("⚠️ Fichier non trouvé : " + path)
+        return
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    href = f'<a download="{os.path.basename(path)}" href="data:{mime};base64,{b64}" class="primary" style="text-decoration:none;">{label}</a>'
+    st.markdown(href, unsafe_allow_html=True)
+
+# =========================
+# ÉTAT & NAVIGATION
+# =========================
+if "nav" not in st.session_state:
+    st.session_state["nav"] = "🏠 Accueil"
+
 page = st.sidebar.radio(
     "📁 Navigation :",
     [
@@ -139,129 +153,206 @@ page = st.sidebar.radio(
 )
 
 # =========================
-# UTILS
+# CONTENU PAGES
 # =========================
-def safe_image(path: str, **kw):
-    p = Path(path)
-    kw.setdefault("use_column_width", True)
-    if p.exists():
-        st.image(str(p), **kw)
-    else:
-        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
 
-def gif_base64(path: str):
-    p = Path(path)
-    if p.exists():
-        with open(path, "rb") as f:
-            data_url = base64.b64encode(f.read()).decode("utf-8")
-        st.markdown(
-            f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" '
-            f'style="max-width:100%; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 6px 16px rgba(15,23,42,.08)">',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-
-# =========================
-# PAGE: ACCUEIL
-# =========================
+# --- PAGE ACCUEIL ---
 if page == "🏠 Accueil":
     st.markdown('<div class="hero">', unsafe_allow_html=True)
-    colL, colR = st.columns([0.95, 1.35])
+    colL, colR = st.columns([1, 1.85], vertical_alignment="center")
 
     with colL:
         st.markdown('<div class="photo">', unsafe_allow_html=True)
-        safe_image("photo.jpg")
+        # Mets un portrait "photo.jpg" si tu veux
+        if file_exists("photo.jpg"):
+            st.image("photo.jpg", use_column_width=True)
+        else:
+            st.image(
+                "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop",
+                use_column_width=True,
+                caption="(remplace 'photo.jpg' dans le dossier pour afficher ta photo)"
+            )
         st.markdown('</div>', unsafe_allow_html=True)
 
     with colR:
         st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
-        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(
             '<p class="lead">Data scientist polyvalent, j’allie expertise technique et rigueur analytique '
             'pour fournir des solutions fiables et utiles aux décisions stratégiques.</p>',
             unsafe_allow_html=True
         )
-
-        # Stacks (ajout Git, Bash, Spark)
         st.markdown(
             '<div class="badges">'
-            '<span class="badge"><span class="dot py"></span>Python</span>'
-            '<span class="badge"><span class="dot sql"></span>SQL</span>'
-            '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
-            '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
-            '<span class="badge"><span class="dot dja"></span>Django</span>'
-            '<span class="badge"><span class="dot af"></span>Airflow</span>'
-            '<span class="badge"><span class="dot aws"></span>AWS</span>'
-            '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
-            '<span class="badge"><span class="dot emb"></span>Embedding</span>'
-            '<span class="badge"><span class="dot git"></span>Git</span>'
-            '<span class="badge"><span class="dot bash"></span>Bash</span>'
-            '<span class="badge"><span class="dot spark"></span>Spark</span>'
+            '<span>🐍 Python</span>'
+            '<span>🗄️ SQL</span>'
+            '<span>📊 Qlik</span>'
+            '<span>📐 Statistiques</span>'
+            '<span>🌐 Django</span>'
+            '<span>🛠️ Airflow</span>'
+            '<span>☁️ AWS</span>'
+            '<span>🧠 PyTorch / TensorFlow</span>'
+            '<span>🧩 Embeddings</span>'
             '</div>', unsafe_allow_html=True
         )
 
         # CTA
-        MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
+        MAIL = "mailto:prenom.nom@mail.com"  # <- remplace
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <- remplace
         st.markdown(
             f'<div class="cta">'
-            f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
-            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
+            f'<a class="primary" href="{MAIL}">📬 Discutons Data</a>'
+            f'<a href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
             f'</div>',
             unsafe_allow_html=True
         )
 
-        st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
+        # Aperçu visuel + pitch métier + bouton vers démo/projet
+        col_prev, col_cta = st.columns([1.7, 1], gap="medium")
+        with col_prev:
+            st.markdown('<div class="preview">', unsafe_allow_html=True)
+            img_bytes = load_image_bytes("pol_plot.png")  # <- ta demande : remplacement du GIF par pol_plot.png
+            if img_bytes:
+                st.image(img_bytes, use_column_width=True)
+                st.markdown('<div class="caption">Cartographie narrative — aperçu</div>', unsafe_allow_html=True)
+            else:
+                st.write("🔎 Place un fichier **pol_plot.png** à la racine du projet pour l’aperçu.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Sous-grille équilibrée : mini-démo (GIF) + applications
-        st.markdown('<div class="subgrid">', unsafe_allow_html=True)
+        with col_cta:
+            st.write("**Applications métier**")
+            st.write("- Veille réputation & risques\n- Intelligence média / influence\n- Analytics audience & produit")
+            if st.button("👉 Voir la démo de la cartographie"):
+                st.session_state["nav"] = "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube"
+                st.rerun()
 
-        # Carte 1 : mini démo
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("<h4>Cartographie narrative (NLP)</h4>", unsafe_allow_html=True)
-        gif_base64("cluster.gif")
-        st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Carte 2 : applications
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("<h4>Applications métier</h4>", unsafe_allow_html=True)
-        st.markdown('<ul class="clean">'
-                    '<li>Veille réputation & risques</li>'
-                    '<li>Intelligence média / influence</li>'
-                    '<li>Analytics audience & produit</li>'
-                    '</ul>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)  # /subgrid
-
-        st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
-
-        # Métriques + Types de données
-        st.markdown('<div class="group-title">Livrables & Volumétrie</div>', unsafe_allow_html=True)
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="pills">'
-            '<span class="pill">7 dashboards / rapports livrés</span>'
-            '<span class="pill">300k+ lignes intégrées</span>'
-            '<span class="pill">2 pipelines NLP / embeddings</span>'
-            '<span class="pill">10+ sources agrégées</span>'
+            '<span>RH (Marine) & Client Analytics (App)</span>'
+            '<span>7 dashboards / rapports livrés</span>'
+            '<span>300k+ lignes intégrées</span>'
+            '<span>2 pipelines NLP/embeddings</span>'
+            '<span>10+ sources agrégées</span>'
             '</div>', unsafe_allow_html=True
         )
-
-        st.markdown('<div class="group-title">Types de données maîtrisées</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="pills">'
-            '<span class="pill">Transactionnelles (commerce, ventes, CRM)</span>'
-            '<span class="pill">Textuelles (NLP : titres, descriptions, commentaires)</span>'
-            '<span class="pill">Séries temporelles (logs, métriques, événements)</span>'
-            '<span class="pill">RH / People Analytics (effectifs, mobilité, indicateurs)</span>'
-            '</div>', unsafe_allow_html=True
-        )
-
-    st.markdown('</div>', unsafe_allow_html=True)  # /hero
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
+
+# --- PAGE DÉMO VISU ---
+elif page == "📈 Démo - Visualisations":
+    st.header("📈 Démo — Visualisations interactives")
+    st.caption("Exemple synthétique : génération d’un nuage 2D (PCA/TSNE) + clustering KMeans sur des embeddings factices.")
+
+    # Données factices (embeddings 50D)
+    rng = np.random.default_rng(42)
+    X = np.vstack([
+        rng.normal(loc=0.0, scale=0.7, size=(120, 50)),
+        rng.normal(loc=3.5, scale=0.9, size=(120, 50)),
+        rng.normal(loc=-3.0, scale=0.8, size=(120, 50)),
+    ])
+    labels_true = np.array([0]*120 + [1]*120 + [2]*120)
+
+    colA, colB = st.columns(2)
+    with colA:
+        n_comp = st.slider("🎛️ Composantes PCA", 2, 20, 8, help="Dimensionalité avant t-SNE (pré-PCA)")
+        perplex = st.slider("🎚️ Perplexity t-SNE", 5, 60, 30, help="Voisinage pour t-SNE")
+
+    with colB:
+        n_clusters = st.slider("🔀 Nombre de clusters (KMeans)", 2, 8, 3)
+        seed = st.number_input("🌱 Random state", value=42, min_value=0, max_value=9999, step=1)
+
+    # Réduction
+    pca = PCA(n_components=n_comp, random_state=seed)
+    Xp = pca.fit_transform(X)
+    tsne = TSNE(n_components=2, perplexity=perplex, random_state=seed, init="pca")
+    X2 = tsne.fit_transform(Xp)
+
+    # Clustering
+    km = KMeans(n_clusters=n_clusters, n_init="auto", random_state=seed)
+    c = km.fit_predict(X2)
+
+    df = pd.DataFrame({"x": X2[:,0], "y": X2[:,1], "cluster": c.astype(str), "truth": labels_true.astype(str)})
+
+    tab1, tab2 = st.tabs(["🟣 Clusters (KMeans)", "🟢 Labels réels"])
+    with tab1:
+        fig = px.scatter(df, x="x", y="y", color="cluster", opacity=0.85, height=520)
+        st.plotly_chart(fig, use_container_width=True)
+    with tab2:
+        fig2 = px.scatter(df, x="x", y="y", color="truth", opacity=0.85, height=520)
+        st.plotly_chart(fig2, use_container_width=True)
+
+    st.markdown("**Note** : remplace ces embeddings par les tiens (tweets, docs) pour visualiser tes clusters réels.")
+
+# --- PAGE PROJET 1 ---
+elif page == "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
+    st.header("▶️ NLP : Identité politique des influenceurs YouTube")
+    st.write("""
+    **Objectif** : cartographier l'identité politique de chaînes YouTube francophones via NLP (mots-clés, topics, polarité, cadrage).
+    - Scraping des descriptions/titres/transcripts (API YouTube + asynchrone).
+    - Modèles : embeddings (par ex. all-MiniLM), topic modeling (BERTopic), sentiment/polarité, classification supervisée (si labels).
+    - KPIs : cohérence de cadrage, dispersion thématique, similarité entre chaînes, évolution temporelle.
+    """)
+    with st.expander("Démonstration : mini-topic sur corpus jouet"):
+        corpus = [
+            "Immigration et sécurité aux frontières.",
+            "Transition énergétique et politique climatique.",
+            "Réforme des retraites et économie du travail.",
+            "École, éducation et inégalités sociales.",
+            "Écologie, énergie, sobriété.",
+            "Débat sur l'identité nationale et l'immigration.",
+        ]
+        vec = CountVectorizer(max_features=1000, stop_words="french")
+        X = vec.fit_transform(corpus)
+        word_counts = np.asarray(X.sum(axis=0)).ravel()
+        vocab = np.array(vec.get_feature_names_out())
+        top_idx = word_counts.argsort()[::-1][:10]
+        df_wc = pd.DataFrame({"mot": vocab[top_idx], "freq": word_counts[top_idx]})
+        st.dataframe(df_wc, use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    **Livrables visuels** :
+    - Carte 2D des chaînes (UMAP/t-SNE) par similarité sémantique.
+    - Heatmap des thèmes × temps.
+    - Radar de cadrage (sécurité/économie/morale…).
+    """)
+
+# --- PAGE PROJET 2 ---
+elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
+    st.header("🎵 NLP/LLM : Cartographier les artistes FR par les paroles")
+    st.write("""
+    **Objectif** : extraire les thèmes et styles à partir des paroles des artistes français, pour analyser proximités, originalité et narratifs.
+    - Prétraitement : normalisation, lemmatisation, stopwords FR, détection n-grams.
+    - Embeddings sémantiques → clustering d’artistes (KMeans/HDBSCAN).
+    - Indicateurs : richesse lexicale, singularité thématique, tonalité affective.
+    """)
+    with st.expander("Mini démo : lexicalité relative (jouet)"):
+        lyrics = [
+            "Amour et nostalgie, nuit et mélancolie.",
+            "Ville et vitesse, argent et solitude.",
+            "Forêts et rivières, lumière, espoir et retour.",
+            "Amour perdu, larmes et pluie, souvenirs.",
+        ]
+        vec = CountVectorizer(max_features=200, stop_words="french")
+        X = vec.fit_transform(lyrics)
+        vocab = vec.get_feature_names_out()
+        totals = np.asarray(X.sum(axis=0)).ravel()
+        dfx = pd.DataFrame({"mot": vocab, "freq": totals}).sort_values("freq", ascending=False).head(15)
+        st.dataframe(dfx, use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    **Livrables visuels** :
+    - Carte des artistes (UMAP) + clusters.
+    - Nuages de mots par cluster.
+    - Courbes de tonalité affective par période.
+    """)
+
+# =========================
+# FOOTER LÉGER
+# =========================
+st.markdown("---")
+st.caption("© 2025 — Théo Bernad. Portfolio data & NLP.  •  Made with Streamlit.")
+
 
 
 # =========================
@@ -894,6 +985,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
