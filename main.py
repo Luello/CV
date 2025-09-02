@@ -199,62 +199,62 @@ def render_fullwidth_gif(path: str):
 # PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
+    with st.spinner("🔄 Veuillez patienter pendant le chargement de la visualisation"):
+        # HERO : photo + (titre, pitch, stacks, CTA)
+        st.markdown('<div class="hero">', unsafe_allow_html=True)
+        colL, colR = st.columns([0.9, 1.4])
     
-    # HERO : photo + (titre, pitch, stacks, CTA)
-    st.markdown('<div class="hero">', unsafe_allow_html=True)
-    colL, colR = st.columns([0.9, 1.4])
-
-    with colL:
-        st.markdown('<div class="photo">', unsafe_allow_html=True)
-        safe_image("photo.jpg")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with colR:
-        st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
-        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
-        st.markdown(
-        '<p class="lead">Développeur Full Stack Data | Création de solutions automatisées pour des gains d\'efficacité et une vision data-driven.</p>',
-        unsafe_allow_html=True
-    )
-        st.markdown(
-    '<p class="text-sm">Explorez mes projets d\'analyse linguistique via le menu latéral.</p>',
-    unsafe_allow_html=True
-)
-        # Stacks (avec Git, Bash, Spark) — séparés des CTA
-        st.markdown('<div class="stack-wrap">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="badges">'
-            '<span class="badge"><span class="dot py"></span>Python</span>'
-            '<span class="badge"><span class="dot sql"></span>SQL</span>'
-            '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
-            '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
-            '<span class="badge"><span class="dot dja"></span>Django</span>'
-            '<span class="badge"><span class="dot af"></span>Airflow</span>'
-            '<span class="badge"><span class="dot aws"></span>AWS</span>'
-            '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
-            '<span class="badge"><span class="dot emb"></span>Embedding</span>'
-            '<span class="badge"><span class="dot git"></span>Git</span>'
-            '<span class="badge"><span class="dot bash"></span>Bash</span>'
-            '<span class="badge"><span class="dot spark"></span>Spark</span>'
-            '</div>', unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        MAIL = "mailto:luella.theo@gmail.com"             # <-- remplace
-        LINKEDIN = "https://www.linkedin.com/in/theobcd/"  # <-- remplace
-        st.markdown(
-            f'<div class="cta">'
-            f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
-            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
-            f'</div>',
+        with colL:
+            st.markdown('<div class="photo">', unsafe_allow_html=True)
+            safe_image("photo.jpg")
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+        with colR:
+            st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
+            st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
+            st.markdown(
+            '<p class="lead">Développeur Full Stack Data | Création de solutions automatisées pour des gains d\'efficacité et une vision data-driven.</p>',
             unsafe_allow_html=True
         )
-    st.markdown('</div>', unsafe_allow_html=True)  # /hero
-
-    # ===== VISUELS CÔTE À CÔTE : GIF (gauche) + INFOGRAM (droite) =====
-    st.markdown('<div class="viz-grid">', unsafe_allow_html=True)
-     
-    with st.spinner("🔄 Veuillez patienter pendant le chargement de la visualisation"):
+            st.markdown(
+        '<p class="text-sm">Explorez mes projets d\'analyse linguistique via le menu latéral.</p>',
+        unsafe_allow_html=True
+    )
+            # Stacks (avec Git, Bash, Spark) — séparés des CTA
+            st.markdown('<div class="stack-wrap">', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="badges">'
+                '<span class="badge"><span class="dot py"></span>Python</span>'
+                '<span class="badge"><span class="dot sql"></span>SQL</span>'
+                '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
+                '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
+                '<span class="badge"><span class="dot dja"></span>Django</span>'
+                '<span class="badge"><span class="dot af"></span>Airflow</span>'
+                '<span class="badge"><span class="dot aws"></span>AWS</span>'
+                '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
+                '<span class="badge"><span class="dot emb"></span>Embedding</span>'
+                '<span class="badge"><span class="dot git"></span>Git</span>'
+                '<span class="badge"><span class="dot bash"></span>Bash</span>'
+                '<span class="badge"><span class="dot spark"></span>Spark</span>'
+                '</div>', unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+            MAIL = "mailto:luella.theo@gmail.com"             # <-- remplace
+            LINKEDIN = "https://www.linkedin.com/in/theobcd/"  # <-- remplace
+            st.markdown(
+                f'<div class="cta">'
+                f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
+                f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+        st.markdown('</div>', unsafe_allow_html=True)  # /hero
+    
+        # ===== VISUELS CÔTE À CÔTE : GIF (gauche) + INFOGRAM (droite) =====
+        st.markdown('<div class="viz-grid">', unsafe_allow_html=True)
+         
+        
         # Carte A : GIF de clustering (texte descriptif au-dessus)
         with st.container():
             st.markdown('<div class="viz-card">', unsafe_allow_html=True)
@@ -996,6 +996,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
