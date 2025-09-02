@@ -88,7 +88,7 @@ if page == "🏠 Accueil":
 
     with colL:
         st.markdown('<div class="photo">', unsafe_allow_html=True)
-        st.image("photo.jpg", use_container_width=True)
+        st.image("photo.jpg", use_column_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with colR:
@@ -133,7 +133,7 @@ if page == "🏠 Accueil":
         with col_prev:
             try:
                 st.markdown('<div class="preview">', unsafe_allow_html=True)
-                st.image("aperçu_carto.png", use_container_width=True)
+                #st.image("aperçu_carto.png", use_column_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
                             unsafe_allow_html=True)
@@ -483,7 +483,7 @@ elif page== "▶️ NLP: Analyse de l'identité politique des influenceurs Youtu
         fig.update_traces(textposition='top center')
         fig.update_layout(height=700)
     
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_column_width=True)
 
         st.markdown("""
     ---
@@ -779,6 +779,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
