@@ -270,23 +270,23 @@ if page == "🏠 Accueil":
                 '</div>', unsafe_allow_html=True
             )
            
-                # rendu du GIF en base64 (largeur totalement fluide)
-                def render_fullwidth_gif(path: str):
-                    p = Path(path)
-                    if p.exists():
-                        with open(path, "rb") as f:
-                            data_url = base64.b64encode(f.read()).decode("utf-8")
-                        st.markdown(
-                            f'<div class="viz-frame"><img src="data:image/gif;base64,{data_url}" '
-                            f'style="width:100%; display:block;"></div>',
-                            unsafe_allow_html=True,
-                        )
-                        st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
-                                    unsafe_allow_html=True)
-                    else:
-                        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
-                render_fullwidth_gif("cluster.gif")
-                st.markdown('</div>', unsafe_allow_html=True)  # /viz-card
+            # rendu du GIF en base64 (largeur totalement fluide)
+            def render_fullwidth_gif(path: str):
+                p = Path(path)
+                if p.exists():
+                    with open(path, "rb") as f:
+                        data_url = base64.b64encode(f.read()).decode("utf-8")
+                    st.markdown(
+                        f'<div class="viz-frame"><img src="data:image/gif;base64,{data_url}" '
+                        f'style="width:100%; display:block;"></div>',
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
+                                unsafe_allow_html=True)
+                else:
+                    st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
+            render_fullwidth_gif("cluster.gif")
+            st.markdown('</div>', unsafe_allow_html=True)  # /viz-card
     st.success("✅")
     # Carte B : Infogram (titre + hint “scroller” au-dessus)
     with st.container():
@@ -996,6 +996,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
