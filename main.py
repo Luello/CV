@@ -199,6 +199,7 @@ def render_fullwidth_gif(path: str):
 # PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
+    
     # HERO : photo + (titre, pitch, stacks, CTA)
     st.markdown('<div class="hero">', unsafe_allow_html=True)
     colL, colR = st.columns([0.9, 1.4])
@@ -267,7 +268,7 @@ if page == "🏠 Accueil":
             '</div>'
             '</div>', unsafe_allow_html=True
         )
-
+        with st.spinner("🔄 Veuillez patienter pendant le chargement de la visualisation"):
         # rendu du GIF en base64 (largeur totalement fluide)
         def render_fullwidth_gif(path: str):
             p = Path(path)
@@ -285,7 +286,7 @@ if page == "🏠 Accueil":
                 st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
         render_fullwidth_gif("cluster.gif")
         st.markdown('</div>', unsafe_allow_html=True)  # /viz-card
-
+        st.success("✅")
     # Carte B : Infogram (titre + hint “scroller” au-dessus)
     with st.container():
         st.markdown('<div class="viz-card">', unsafe_allow_html=True)
@@ -1003,6 +1004,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
