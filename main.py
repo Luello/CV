@@ -1,122 +1,132 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from sklearn.manifold import TSNE
-from sklearn.cluster import KMeans
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import PCA
-import numpy as np
-import ast
-import plotly.express as px
-import re
-from collections import Counter
-import base64
-
-st.set_page_config(layout="wide")
+# --- CSS global (ajoute/merge avec le tien) ---
 st.markdown("""
-    <style>
-        /* Agrandir le texte dans les boutons radio de la sidebar */
-        section[data-testid="stSidebar"] .stRadio > label {
-            font-size: 1.2rem;
-            font-weight: 500;
-        }
+<style>
+#MainMenu, footer {visibility: hidden;}
+.block-container {padding-top: 1rem;}
+section[data-testid="stSidebar"] .stRadio > label { font-size: 1.05rem; font-weight: 600; }
+section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
 
-        /* Bonus : icônes emoji un peu plus espacées */
-        section[data-testid="stSidebar"] .stRadio div {
-            padding-top: 0.4rem;
-            padding-bottom: 0.4rem;
-        }
-    </style>
+/* HERO */
+.hero {
+  border-radius: 18px; padding: 26px;
+  background: linear-gradient(135deg, #0f172a 0%, #111827 60%);
+  color: #fff; border: 1px solid #1f2937;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+}
+.hero h1 {font-size: 2.0rem; margin: 0 0 6px 0; letter-spacing: .2px;}
+.hero p.lead {font-size: 1.05rem; opacity: .96; margin: 6px 0 14px 0; line-height: 1.5;}
+
+.badges span{
+  display:inline-block; margin: 4px 8px 0 0; padding: 6px 10px;
+  border: 1px solid #374151; border-radius: 999px; font-size:.86rem; color:#e5e7eb;
+  background: rgba(17,24,39,.35);
+}
+.cta a{
+  text-decoration:none; display:inline-block; margin-right:10px; margin-top:10px;
+  padding:10px 14px; border-radius:10px; border:1px solid #374151; background:#111827; color:#fff;
+  transition: transform .06s ease, filter .2s ease;
+}
+.cta a.primary{background:#2563eb; border-color:#2563eb;}
+.cta a:hover{transform: translateY(-1px); filter:brightness(1.06)}
+.photo img {border-radius: 14px; width: 100%; height:auto; object-fit:cover; border:1px solid #1f2937;}
+
+.preview {
+  margin-top: 12px; border-radius: 12px; overflow: hidden; border:1px solid #1f2937;
+  background:#0b1220;
+}
+.preview img {width:100%; display:block;}
+.caption {font-size:.92rem; color:#cbd5e1; margin-top:6px;}
+.pills span{
+  display:inline-block; margin:6px 8px 0 0; padding:6px 10px; border-radius:999px;
+  background: rgba(255,255,255,0.06); border:1px solid #334155; font-size:.85rem; color:#e5e7eb;
+}
+.divider {height:1px; background: #1f2937; margin: 12px 0 8px 0; border-radius:1px;}
+@media (max-width: 900px) {.hero h1{font-size:1.6rem}}
+</style>
 """, unsafe_allow_html=True)
-# Configuration de la page en mode large
 
-
-# Panneau latéral
-page = st.sidebar.radio("📁 Navigation :", [
-    "🏠 Accueil",
-    "📈 Démo - Visualisations",
-    "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
-    "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
-])
-if page== "📈 Démo - Visualisations":
-    st.title(" Overview Analyse et Clustering")
-    
-    file_ = open("cluster.gif", "rb")
-    contents = file_.read()
-    data_url = base64.b64encode(contents).decode("utf-8")
-    file_.close()
-    
-    st.markdown(
-        f'<img src="data:image/gif;base64,{data_url}" alt="cat gif">',
-        unsafe_allow_html=True,
-    )
-    st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
-
-    # Intégration de l'iframe Infogram
-    infogram_html = """
-<div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
-     data-type="interactive" data-title=""></div>
-<script>
-!function(e,n,i,s){
-    var d="InfogramEmbeds";
-    var o=e.getElementsByTagName(n)[0];
-    if(window[d] && window[d].initialized) {
-        window[d].process && window[d].process();
-    } else if(!e.getElementById(i)){
-        var r=e.createElement(n);
-        r.async=1;
-        r.id=i;
-        r.src=s;
-        o.parentNode.insertBefore(r,o);
-    }
-}(document,"script","infogram-async","https://e.infogram.com/js/dist/embed-loader-min.js");
-</script>
-
-<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;
-line-height:15px!important;text-align:center;border-top:1px solid #dadada;
-margin:0 30px">
-<br><a href="https://infogram.com" style="color:#989898!important;
-text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>
-"""
-
-    
-    st.components.v1.html(infogram_html, height=800, scrolling=True)
-    
-    # Ajout du crédit Infogram (facultatif)
-    st.markdown(
-        '<div style="padding:8px 0;font-family:Arial!important;font-size:13px!important;'
-        'line-height:15px!important;text-align:center;border-top:1px solid #dadada;'
-        'margin:0 30px;width: 640px">'
-        '<br><a href="https://infogram.com" style="color:#989898!important;'
-        'text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></div>',
-        unsafe_allow_html=True
-    )
+# --- PAGE ACCUEIL ---
 if page == "🏠 Accueil":
-    st.markdown('<h1 style="text-align: center;">Bienvenue sur mon CV applicatif</h1><br>', unsafe_allow_html=True)
-    # Utiliser les colonnes de Streamlit pour centrer les éléments
-    col1, col2, col3 = st.columns([1, 2,1])  # Diviser l'espace en trois colonnes
-    
-    with col1:
-        st.image("photo.jpg", width=250,use_column_width='always')
-    with col2:  # Centrer les éléments en les plaçant dans la colonne centrale
-        # Titre
-        
-        st.markdown('<h1 style="text-align: center;">Théo Bernad</h1><br>', unsafe_allow_html=True)
-        
-        
-        
+    st.markdown('<div class="hero">', unsafe_allow_html=True)
+    colL, colR = st.columns([1, 1.85], vertical_alignment="center")
 
-        # Description principale
+    with colL:
+        st.markdown('<div class="photo">', unsafe_allow_html=True)
+        st.image("photo.jpg", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with colR:
+        st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
+
+        # Accroche demandée (mot pour mot)
         st.markdown(
-            """
-            <div style="text-align: center; font-size: 18px; line-height: 1.6; margin-top: 20px;">
-                <p>Data Scientist passionné par les opportunités qu'offrent les progrès en IA.</p>  
-                <p>Je peux mener un projet Data du besoin métier au déploiement, dans une optique "full-stack".</p>
-                <p> Vous pouvez accéder, depuis le menu de gauche, aux différents projets que j'ai pu réaliser, et dont je déploie une partie ici.</p>
-            </div><br>
-            """, 
+            '<p class="lead">Data scientist polyvalent, j’allie expertise technique et rigueur analytique '
+            'pour fournir des solutions fiables et utiles aux décisions stratégiques.</p>',
             unsafe_allow_html=True
         )
+
+        # Stacks avec emojis sobres (harmonie + lisibilité)
+        st.markdown(
+            '<div class="badges">'
+            '<span>🐍 Python</span>'
+            '<span>🗄️ SQL</span>'
+            '<span>📊 Qlik</span>'
+            '<span>📐 Statistiques</span>'
+            '<span>🌐 Django</span>'
+            '<span>🛠️ Airflow</span>'
+            '<span>☁️ AWS</span>'
+            '<span>🧠 PyTorch / TensorFlow</span>'
+            '<span>🧩 Embedding</span>'
+            '</div>', unsafe_allow_html=True
+        )
+
+        # CTA
+        MAIL = "mailto:prenom.nom@mail.com"      # <- remplace
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <- remplace
+        st.markdown(
+            f'<div class="cta">'
+            f'<a class="primary" href="{MAIL}">📬 Discutons Data</a>'
+            f'<a href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+        # Aperçu visuel + pitch métier + bouton vers démo/projet
+        # (mets un fichier "aperçu_carto.png" ou "aperçu_carto.gif" à la racine)
+        col_prev, col_cta = st.columns([1.7, 1], gap="medium")
+        with col_prev:
+            try:
+                st.markdown('<div class="preview">', unsafe_allow_html=True)
+                st.image("aperçu_carto.png", use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
+                            unsafe_allow_html=True)
+            except Exception:
+                pass
+
+        with col_cta:
+            st.write("**Applications métier**")
+            st.write("- Veille réputation & risques\n- Intelligence média / influence\n- Analytics audience & produit")
+            if st.button("👉 Voir la démo de la cartographie"):
+                st.session_state["nav"] = "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube"
+                st.rerun()
+
+        # Divider + Métriques en pills (ajuste les chiffres réels)
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="pills">'
+            '<span>RH (Marine) & Client Analytics (App)</span>'
+            '<span>7 dashboards / rapports livrés</span>'
+            '<span>300k+ lignes intégrées</span>'
+            '<span>2 pipelines NLP/embeddings</span>'
+            '<span>10+ sources agrégées</span>'
+            '</div>', unsafe_allow_html=True
+        )
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
+
 
     # Créer les onglets
     tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
@@ -733,3 +743,4 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
