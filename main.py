@@ -18,65 +18,70 @@ from pathlib import Path
 # =========================
 st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
 
-# Navigation pilotable (pour ouvrir une page via un bouton)
 if "nav" not in st.session_state:
     st.session_state["nav"] = "🏠 Accueil"
 
 # =========================
-# STYLES (thème clair)
+# STYLES (thème clair harmonisé)
 # =========================
 st.markdown("""
 <style>
+/* Theme variables */
 :root{
-  --bg:#f8fafc;          /* slate-50 */
-  --card:#ffffff;        /* white */
+  --app-bg:#f6f8fb;      /* app background */
+  --card:#ffffff;        /* cards */
   --text:#0f172a;        /* slate-900 */
   --muted:#475569;       /* slate-600 */
-  --border:#e5e7eb;      /* gray-200 */
-  --chip:#eef2f7;        /* light chip */
+  --border:#e6e9f0;      /* soft border */
+  --chip:#eef2f7;        /* chip bg */
   --chip-text:#0f172a;
   --primary:#2563eb;     /* blue-600 */
   --primary-fore:#ffffff;
+  --shadow:0 10px 28px rgba(15,23,42,.06);
+  --shadow-soft:0 4px 14px rgba(15,23,42,.08);
 }
-.stApp {background: var(--bg) !important;}
+.stApp {background: linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%) !important;}
 .block-container {padding-top: 1.2rem !important; max-width: 1200px !important;}
 #MainMenu, footer {visibility: hidden;}
 
+/* Sidebar radio lisible */
 section[data-testid="stSidebar"] .stRadio > label { font-size: 1.06rem; font-weight: 700; }
 section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
 
-/* HERO card clair */
+/* HERO card */
 .hero {
   display: grid; grid-template-columns: 1.05fr 1.7fr; gap: 28px;
   border-radius: 18px; padding: 28px;
-  background: linear-gradient(135deg, var(--card) 0%, #fbfbfb 70%) !important;
+  background: linear-gradient(160deg, var(--card) 0%, #fafbff 85%) !important;
   color: var(--text) !important; border: 1px solid var(--border) !important;
-  box-shadow: 0 10px 30px rgba(15,23,42,.06) !important;
+  box-shadow: var(--shadow) !important;
 }
 @media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
 
-.hero h1 { font-size: 2.15rem; margin: 0 0 8px 0; letter-spacing: .2px; color: var(--text) !important; }
-.accent { height: 3px; width: 120px; background: var(--primary); border-radius: 2px; margin: 6px 0 14px 0; }
-.lead { font-size: 1.06rem; line-height: 1.55; color: var(--muted) !important; margin: 2px 0 16px 0; }
+.hero h1 { font-size: 2.2rem; margin: 0 0 10px 0; letter-spacing:.2px; color: var(--text) !important; }
+.accent { height: 3px; width: 132px; background: var(--primary);
+          border-radius: 2px; margin: 2px 0 16px 0; }
+.lead { font-size: 1.05rem; line-height: 1.6; color: var(--muted) !important; margin: 0 0 16px 0; }
 
 /* Photo */
 .photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
-         box-shadow: 0 8px 24px rgba(15,23,42,.08); background:#fff; }
+         box-shadow: var(--shadow-soft); background:#fff; }
 .photo img { width:100%; height:auto; display:block; }
 
 /* Badges stacks */
-.badges { margin-top: 2px; }
+.badges { margin-top: 4px; display:flex; flex-wrap:wrap; }
 .badge {
   display:inline-flex; align-items:center; gap:6px;
   margin: 6px 8px 0 0; padding: 7px 12px;
   border: 1px solid var(--border); border-radius: 999px;
   background: var(--chip); color: var(--chip-text); font-size: .88rem;
+  box-shadow: 0 1px 1px rgba(15,23,42,.04);
 }
 .dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
 .dot.py {background:#16a34a;}     /* green-600 */
 .dot.sql{background:#0ea5e9;}     /* sky-500  */
-.dot.qlk{background:#8b5cf6;}     /* violet   */
-.dot.sta{background:#f59e0b;}     /* amber    */
+.dot.qlk{background:#8b5cf6;}     /* violet    */
+.dot.sta{background:#f59e0b;}     /* amber     */
 .dot.dja{background:#0ea5e9;}
 .dot.af {background:#ef4444;}
 .dot.aws{background:#f97316;}
@@ -94,21 +99,22 @@ section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
                color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
 .btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
 
-/* Sous-blocs */
-.rule { height:2px; background: var(--border); border-radius:2px; margin: 14px 0; }
-.preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; }
-.caption { font-size:.92rem; color:#64748b; margin-top:6px; }
+/* Sub blocks */
+.rule { height:2px; background: var(--border); border-radius:2px; margin: 14px 0 12px 0; }
+.preview { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff; box-shadow: var(--shadow-soft); }
+.caption { font-size:.92rem; color:#64748b; margin-top:8px; }
 
 /* Pills métriques */
-.pills { margin-top: 8px; }
+.pills { margin-top: 12px; }
 .pill {
   display:inline-block; margin:6px 8px 0 0; padding:7px 12px; border-radius:999px;
   background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.86rem;
+  box-shadow: 0 1px 1px rgba(15,23,42,.04);
 }
 
-/* List simple */
+/* Clean list */
 ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
-ul.clean li { margin: .25rem 0; }
+ul.clean li { margin: .35rem 0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -136,27 +142,35 @@ page = st.sidebar.radio(
 # UTILS
 # =========================
 def safe_image(path: str, **kw):
-    """Affiche une image si elle existe, sinon un message propre."""
     p = Path(path)
     kw.setdefault("use_column_width", True)
     if p.exists():
         st.image(str(p), **kw)
     else:
-        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine de l'app.")
+        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
+
+def safe_gif(path: str):
+    """Affiche un GIF dans un cadre preview harmonisé si présent."""
+    p = Path(path)
+    if p.exists():
+        st.markdown('<div class="preview">', unsafe_allow_html=True)
+        st.image(str(p), use_column_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
 
 # =========================
-# PAGE: DEMO VISUALISATIONS (reprend ton code)
+# PAGE: DEMO VISUALISATIONS (ta page d’origine)
 # =========================
 if page == "📈 Démo - Visualisations":
     st.title("Overview Analyse et Clustering")
 
-    # GIF (ton approche)
     try:
         with open("cluster.gif", "rb") as f:
             data_url = base64.b64encode(f.read()).decode("utf-8")
         st.markdown(
             f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" '
-            f'style="max-width:100%; border-radius:8px; border:1px solid #e5e7eb;">',
+            f'style="max-width:100%; border-radius:10px; border:1px solid #e5e7eb; box-shadow:0 6px 16px rgba(15,23,42,.08)">',
             unsafe_allow_html=True,
         )
     except Exception:
@@ -164,7 +178,6 @@ if page == "📈 Démo - Visualisations":
 
     st.title("📊 Visualisations réalisées avec les données Data.gouv sur les accidents routiers.")
 
-    # Infogram (identique à ton code)
     infogram_html = """
 <div class="infogram-embed" data-id="8b9c87b0-eb40-4411-927d-1141a21b8c59" 
      data-type="interactive" data-title=""></div>
@@ -193,7 +206,7 @@ text-decoration:none!important;" target="_blank" rel="nofollow">Infogram</a></di
     st.components.v1.html(infogram_html, height=800, scrolling=True)
 
 # =========================
-# PAGE: ACCUEIL (hero refait)
+# PAGE: ACCUEIL (hero avec mini-démo cluster.gif)
 # =========================
 if page == "🏠 Accueil":
     st.markdown('<div class="hero">', unsafe_allow_html=True)
@@ -213,7 +226,7 @@ if page == "🏠 Accueil":
             unsafe_allow_html=True
         )
 
-        # Stacks
+        # Stacks (badges)
         st.markdown(
             '<div class="badges">'
             '<span class="badge"><span class="dot py"></span>Python</span>'
@@ -239,18 +252,12 @@ if page == "🏠 Accueil":
 
         st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
 
-        # Sous-bloc: aperçu (optionnel) + use-cases + bouton projet
+        # Sous-bloc: mini-démo = cluster.gif à gauche, use-cases + bouton à droite
         col_prev, col_use = st.columns([1.6, 1])
         with col_prev:
-            # Mets un fichier "apercu_carto.png" si tu veux un visuel ici
-            if Path("apercu_carto.png").exists():
-                st.markdown('<div class="preview">', unsafe_allow_html=True)
-                st.image("apercu_carto.png", use_column_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
-                            unsafe_allow_html=True)
-            else:
-                st.caption("Cartographie narrative (NLP) — aperçu 15s")
+            safe_gif("cluster.gif")
+            st.markdown('<div class="caption">Cartographie narrative (NLP) — aperçu 15s</div>',
+                        unsafe_allow_html=True)
 
         with col_use:
             st.markdown("**Applications métier**")
@@ -260,7 +267,7 @@ if page == "🏠 Accueil":
                         '<li>Analytics audience & produit</li>'
                         '</ul>', unsafe_allow_html=True)
             if st.button("👉 Voir la démo de la cartographie"):
-                st.session_state["nav"] = "▶️ NLP: Analyse de l\'identité politique des influenceurs Youtube"
+                st.session_state["nav"] = "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube"
                 st.rerun()
 
         st.markdown('<div class="rule"></div>', unsafe_allow_html=True)
@@ -277,6 +284,23 @@ if page == "🏠 Accueil":
         )
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
+
+# =========================
+# PAGE: PROJET NLP (placeholder)
+# =========================
+if page == "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube":
+    st.title("NLP — Analyse de l'identité politique des influenceurs YouTube")
+    st.write("Démo et résumé à insérer ici (chargement, aperçu, explication rapide).")
+
+# =========================
+# PAGE: CARTOGRAPHIE ARTISTES (placeholder)
+# =========================
+if page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
+    st.title("NLP/LLM — Cartographie d’artistes depuis les paroles")
+    st.write("Démo et résumé à insérer ici (aperçu de la méthode, projection, clustering).")
+
 
     # Créer les onglets
     tab1, tab2, tab3 = st.tabs(["Expériences", "Formations","Passions"])
@@ -893,6 +917,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
