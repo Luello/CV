@@ -13,6 +13,76 @@ from collections import Counter
 import base64
 
 st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
+st.markdown("""
+<style>
+/* Nettoyage */
+#MainMenu, footer {visibility: hidden;}
+.block-container {padding-top: 1rem;}
+
+/* Typo couleurs (clair) */
+:root{
+  --text:#111827;        /* slate-900 */
+  --muted:#475569;       /* slate-600 */
+  --chip:#e5e7eb;        /* gray-200 */
+  --chipText:#111827;
+  --border:#e5e7eb;      /* gray-200 */
+  --card:#ffffff;        /* white */
+  --cardGrad:#fafafa;    /* very light */
+  --primary:#2563eb;     /* blue-600 */
+  --primaryText:#ffffff;
+}
+
+/* Sidebar radio plus lisible */
+section[data-testid="stSidebar"] .stRadio > label { font-size: 1.05rem; font-weight: 600; }
+section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
+
+/* HERO clair */
+.hero {
+  border-radius: 16px; padding: 26px;
+  background: linear-gradient(135deg, var(--card) 0%, var(--cardGrad) 80%);
+  color: var(--text); border: 1px solid var(--border);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.06);
+}
+.hero h1 {font-size: 2.0rem; margin: 0 0 6px 0; letter-spacing: .2px; color: var(--text);}
+.hero p.lead {font-size: 1.02rem; color: var(--muted); margin: 6px 0 14px 0; line-height: 1.55;}
+
+/* Photo */
+.photo img {border-radius: 14px; width: 100%; height:auto; object-fit:cover; border:1px solid var(--border);}
+
+/* Badges stacks */
+.badges span{
+  display:inline-block; margin: 6px 8px 0 0; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: 999px; font-size:.88rem; color:var(--chipText);
+  background: #f8fafc; /* slate-50 */
+}
+
+/* CTA clair */
+.cta a{
+  text-decoration:none; display:inline-block; margin-right:10px; margin-top:10px;
+  padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#ffffff; color:var(--text);
+  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+}
+.cta a.primary{background:var(--primary); border-color:var(--primary); color:var(--primaryText);}
+.cta a:hover{transform: translateY(-1px); filter:brightness(1.04); box-shadow:0 4px 14px rgba(37,99,235,.18);}
+
+/* Preview bloc (clair) */
+.preview { margin-top: 12px; border-radius: 12px; overflow: hidden; border:1px solid var(--border); background:#ffffff; }
+.preview img {width:100%; display:block;}
+.caption {font-size:.92rem; color:#64748b; margin-top:6px;}  /* slate-500 */
+
+/* Pills métriques (clair) */
+.pills span{
+  display:inline-block; margin:6px 8px 0 0; padding:6px 10px; border-radius:999px;
+  background: #f1f5f9; /* slate-100 */ border:1px solid var(--border); font-size:.85rem; color:#334155;
+}
+
+/* Divider subtil */
+.divider {height:1px; background: var(--border); margin: 14px 0 10px 0; border-radius:1px;}
+
+/* Légère retouche des h2/h3 streamlit par défaut */
+h2, h3 { color: var(--text); }
+</style>
+""", unsafe_allow_html=True)
 
 # 2) État pour piloter la nav par boutons
 if "nav" not in st.session_state:
@@ -779,6 +849,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
