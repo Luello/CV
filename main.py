@@ -237,8 +237,8 @@ if page == "🏠 Accueil":
         )
         st.markdown('</div>', unsafe_allow_html=True)
 
-        MAIL = "mailto:prenom.nom@mail.com"             # <-- remplace
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
+        MAIL = "mailto:luella.theo@gmail.com"             # <-- remplace
+        LINKEDIN = "https://www.linkedin.com/in/theobcd/"  # <-- remplace
         st.markdown(
             f'<div class="cta">'
             f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
@@ -1155,6 +1155,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
