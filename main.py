@@ -8,8 +8,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import PCA 
 import numpy as np 
 import plotly.express as px 
-import re from collections 
-import Counter 
+import re 
+from collections import Counter 
 import base64
 st.markdown("""
 <style>
@@ -755,6 +755,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
