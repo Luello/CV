@@ -27,105 +27,67 @@ if "nav" not in st.session_state:
 st.markdown("""
 <style>
 :root{
-  --app-bg:#f6f8fb;
-  --card:#ffffff;
-  --text:#0f172a;
-  --muted:#475569;
-  --border:#e6e9f0;
-  --chip:#eef2f7;
-  --chip-text:#0f172a;
-  --primary:#2563eb;
-  --primary-fore:#ffffff;
-  --shadow:0 10px 28px rgba(15,23,42,.06);
-  --shadow-soft:0 4px 14px rgba(15,23,42,.08);
+  --app-bg:#f6f8fb; --card:#ffffff; --text:#0f172a; --muted:#475569; --border:#e6e9f0;
+  --chip:#eef2f7; --chip-text:#0f172a; --primary:#2563eb; --primary-fore:#ffffff;
+  --shadow:0 10px 28px rgba(15,23,42,.06); --shadow-soft:0 4px 14px rgba(15,23,42,.08);
 }
-.stApp {background: linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%) !important;}
-.block-container {padding-top: 1.0rem !important; max-width: 1080px !important; margin: auto !important;}
-#MainMenu, footer {visibility: hidden;}
+.stApp{background:linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%)!important;}
+.block-container{padding-top:1rem!important; max-width:1080px!important; margin:auto!important;}
+#MainMenu, footer{visibility:hidden}
 
-/* Sidebar */
-section[data-testid="stSidebar"] .stRadio > label { font-size: 1.04rem; font-weight: 700; }
-section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
+/* HERO */
+.hero{display:grid; grid-template-columns:0.9fr 1.4fr; gap:24px; border-radius:18px; padding:24px;
+      background:linear-gradient(160deg,var(--card) 0%, #fafbff 85%)!important;
+      border:1px solid var(--border)!important; color:var(--text)!important; box-shadow:var(--shadow)!important;}
+@media(max-width:960px){.hero{grid-template-columns:1fr}}
+.hero h1{font-size:2.1rem; margin:0 0 6px 0}
+.accent{height:3px; width:120px; background:var(--primary); border-radius:2px; margin:4px 0 14px 0}
+.lead{font-size:1.02rem; line-height:1.55; color:var(--muted)!important; margin:0}
 
-/* HERO compact */
-.hero {
-  display: grid; grid-template-columns: 0.9fr 1.4fr; gap: 24px;
-  border-radius: 18px; padding: 24px;
-  background: linear-gradient(160deg, var(--card) 0%, #fafbff 85%) !important;
-  color: var(--text) !important; border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow) !important;
-}
-@media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
-.hero h1 { font-size: 2.1rem; margin: 0 0 6px 0; letter-spacing:.2px; color: var(--text) !important; }
-.accent { height: 3px; width: 120px; background: var(--primary);
-          border-radius: 2px; margin: 4px 0 14px 0; }
-.lead { font-size: 1.02rem; line-height: 1.55; color: var(--muted) !important; margin: 0 0 14px 0; }
+/* Col gauche */
+.photo{border-radius:16px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow-soft); background:#fff}
+.photo img{width:100%; height:auto; display:block}
+.gifwrap{margin-top:12px; border:1px solid var(--border); border-radius:12px; overflow:hidden;
+         box-shadow:var(--shadow-soft); background:#fff}
+.caption{text-align:center; color:#64748b; font-size:.9rem; margin-top:6px}
 
-/* Colonne gauche (photo) */
-.photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
-         box-shadow: var(--shadow-soft); background:#fff; }
-.photo img { width:100%; height:auto; display:block; }
+/* Stacks + CTA */
+.stack-wrap{margin-top:14px}
+.badges{display:flex; flex-wrap:wrap; gap:8px}
+.badge{display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px;
+       border:1px solid var(--border); background:var(--chip); color:var(--chip-text); font-size:.86rem;
+       box-shadow:0 1px 1px rgba(15,23,42,.04)}
+.dot{width:8px; height:8px; border-radius:999px; display:inline-block}
+.dot.py{background:#16a34a}.dot.sql{background:#0ea5e9}.dot.qlk{background:#8b5cf6}
+.dot.sta{background:#f59e0b}.dot.dja{background:#0ea5e9}.dot.af{background:#ef4444}
+.dot.aws{background:#f97316}.dot.dl{background:#22c55e}.dot.emb{background:#64748b}
+.dot.git{background:#f43f5e}.dot.bash{background:#22d3ee}.dot.spark{background:#fb923c}
 
-/* Badges */
-.badges { margin-top: 6px; display:flex; flex-wrap:wrap; }
-.badge {
-  display:inline-flex; align-items:center; gap:6px;
-  margin: 6px 8px 0 0; padding: 7px 12px;
-  border: 1px solid var(--border); border-radius: 999px;
-  background: var(--chip); color: var(--chip-text); font-size: .86rem;
-  box-shadow: 0 1px 1px rgba(15,23,42,.04);
-}
-.dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
-.dot.py {background:#16a34a;}   .dot.sql{background:#0ea5e9;}   .dot.qlk{background:#8b5cf6;}
-.dot.sta{background:#f59e0b;}   .dot.dja{background:#0ea5e9;}   .dot.af {background:#ef4444;}
-.dot.aws{background:#f97316;}   .dot.dl {background:#22c55e;}   .dot.emb{background:#64748b;}
-.dot.git{background:#f43f5e;}   .dot.bash{background:#22d3ee;}  .dot.spark{background:#fb923c;}
+.cta{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); display:flex; gap:10px; flex-wrap:wrap}
+.btn{display:inline-block; text-decoration:none; padding:10px 14px; border-radius:12px; border:1px solid var(--border);
+     background:#fff; color:var(--text); box-shadow:0 2px 6px rgba(15,23,42,.05); transition:all .15s ease; font-size:.95rem}
+.btn.primary{background:var(--primary); color:var(--primary-fore); border-color:var(--primary);
+             box-shadow:0 8px 18px rgba(37,99,235,.22)}
+.btn:hover{transform:translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10)}
 
-/* CTA */
-.cta { display:flex; gap:10px; flex-wrap:wrap; }
-.btn {
-  text-decoration:none; display:inline-block;
-  padding:10px 14px; border-radius:12px; border:1px solid var(--border);
-  background:#fff; color: var(--text); transition: all .15s ease;
-  box-shadow: 0 2px 6px rgba(15,23,42,.05);
-  font-size:.95rem;
-}
-.btn.primary { background: var(--primary); border-color: var(--primary);
-               color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
-.btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
+/* GIF plein largeur sous le hero */
+.fullgif{margin:16px 0 8px 0; border:1px solid var(--border); border-radius:14px; overflow:hidden;
+         box-shadow:var(--shadow-soft); background:#fff}
+.fullgif img{width:100%; display:block}
 
-/* GIF plein largeur (sous le hero) */
-.fullgif {
-  margin: 16px 0 8px 0; border:1px solid var(--border); border-radius:14px; overflow:hidden;
-  box-shadow: var(--shadow-soft); background:#fff;
-}
-.fullgif img { width:100%; display:block; }
-.caption { font-size:.9rem; color:#64748b; margin-top:6px; text-align:center; }
-
-/* Bloc sous le GIF : 2 colonnes harmonisées */
-.below {
-  display:grid; grid-template-columns: 1.1fr 0.9fr; gap:18px; margin-top: 16px;
-}
-@media (max-width: 960px){ .below { grid-template-columns: 1fr; } }
-.card {
-  border:1px solid var(--border); border-radius:12px; background:#fff;
-  box-shadow: var(--shadow-soft); padding:16px;
-}
-.card h3 { margin:0 0 10px 0; color:var(--text); }
-
-/* Pills */
-.pills { display:flex; flex-wrap:wrap; gap:8px; }
-.pill {
-  display:inline-block; padding:7px 12px; border-radius:999px;
-  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.85rem;
-  box-shadow: 0 1px 1px rgba(15,23,42,.04);
-}
-
-/* List */
-ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
-ul.clean li { margin: .35rem 0; }
+/* Grid sous le GIF */
+.info-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-top:16px}
+@media(max-width:1100px){.info-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.info-grid{grid-template-columns:1fr}}
+.card{border:1px solid var(--border); border-radius:12px; background:#fff; box-shadow:var(--shadow-soft); padding:16px}
+.card h3{margin:0 0 10px 0}
+ul.clean{margin:0; padding-left:1.1rem}
+.pills{display:flex; flex-wrap:wrap; gap:8px}
+.pill{display:inline-block; padding:7px 12px; border-radius:999px; background:#f1f5f9; border:1px solid var(--border);
+     color:#334155; font-size:.85rem; box-shadow:0 1px 1px rgba(15,23,42,.04)}
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================
 # NAVIGATION
@@ -179,7 +141,7 @@ def render_fullwidth_gif(path: str):
 # PAGE: ACCUEIL
 # =========================
 if page == "🏠 Accueil":
-    # HERO (photo / intro / stacks / CTA)
+    # HERO : photo + (titre, pitch, stacks, CTA)
     st.markdown('<div class="hero">', unsafe_allow_html=True)
     colL, colR = st.columns([0.9, 1.4])
 
@@ -197,7 +159,8 @@ if page == "🏠 Accueil":
             unsafe_allow_html=True
         )
 
-        # Stacks (incluant Git, Bash, Spark)
+        # Stacks (avec Git, Bash, Spark) — dans un wrapper séparé des CTA
+        st.markdown('<div class="stack-wrap">', unsafe_allow_html=True)
         st.markdown(
             '<div class="badges">'
             '<span class="badge"><span class="dot py"></span>Python</span>'
@@ -214,10 +177,11 @@ if page == "🏠 Accueil":
             '<span class="badge"><span class="dot spark"></span>Spark</span>'
             '</div>', unsafe_allow_html=True
         )
+        st.markdown('</div>', unsafe_allow_html=True)  # /stack-wrap
 
-        # CTA
-        MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
+        # CTA séparés (plus de superposition avec les badges)
+        MAIL = "mailto:prenom.nom@mail.com"
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"
         st.markdown(
             f'<div class="cta">'
             f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
@@ -228,13 +192,25 @@ if page == "🏠 Accueil":
 
     st.markdown('</div>', unsafe_allow_html=True)  # /hero
 
-    # GIF PLEIN LARGEUR (100% conteneur)
+    # GIF plein largeur SOUS le hero (pas dans la colonne gauche)
+    def render_fullwidth_gif(path: str):
+        p = Path(path)
+        if p.exists():
+            with open(path, "rb") as f:
+                data_url = base64.b64encode(f.read()).decode("utf-8")
+            st.markdown(
+                f'<div class="fullgif"><img src="data:image/gif;base64,{data_url}" alt="aperçu clustering"></div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
+                        unsafe_allow_html=True)
+        else:
+            st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
     render_fullwidth_gif("cluster.gif")
 
-    # BLOC SOUS-GIF : 2 colonnes → Applications | Disponibilités
-    st.markdown('<div class="below">', unsafe_allow_html=True)
+    # Cartes sous le GIF : 3 colonnes responsives
+    st.markdown('<div class="info-grid">', unsafe_allow_html=True)
 
-    # Colonne 1 : Applications
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Applications métier")
     st.markdown('<ul class="clean">'
@@ -244,7 +220,6 @@ if page == "🏠 Accueil":
                 '</ul>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Colonne 2 : Disponibilités
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Disponibilités & mobilité")
     st.markdown(
@@ -256,10 +231,7 @@ if page == "🏠 Accueil":
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)  # /below
-
-    # Types de données maîtrisées (une seule ligne de tags)
-    st.markdown('<div class="card" style="margin-top:16px;">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("### Types de données maîtrisées")
     st.markdown(
         '<div class="pills">'
@@ -271,6 +243,9 @@ if page == "🏠 Accueil":
         unsafe_allow_html=True
     )
     st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)  # /info-grid
+
 # --- PAGE DÉMO VISU ---
 elif page == "📈 Démo - Visualisations":
     st.header("📈 Démo — Visualisations interactives")
@@ -1017,6 +992,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
