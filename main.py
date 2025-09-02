@@ -11,6 +11,30 @@ import plotly.express as px
 import re 
 from collections import Counter 
 import base64
+
+st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
+
+# 2) État pour piloter la nav par boutons
+if "nav" not in st.session_state:
+    st.session_state["nav"] = "🏠 Accueil"
+
+# 3) Sidebar (définit la variable `page`)
+page = st.sidebar.radio(
+    "📁 Navigation :",
+    [
+        "🏠 Accueil",
+        "📈 Démo - Visualisations",
+        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+    ],
+    index=[
+        "🏠 Accueil",
+        "📈 Démo - Visualisations",
+        "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube",
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+    ].index(st.session_state["nav"]),
+    key="nav"
+)
 st.markdown("""
 <style>
 #MainMenu, footer {visibility: hidden;}
@@ -755,6 +779,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
