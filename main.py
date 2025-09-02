@@ -640,16 +640,27 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
     
     # Afficher le graphique
     st.plotly_chart(fig, use_column_width=True)
-    
+    st.markdown("""
+        ---
+        
+        ### 🎯 Objectif du projet
+        
+        Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
+        
+        Les scripts sont extraits et analysés automatiquement au travers d'un ensemble de crit-res relatifs à ce qui est constitutif d'une identité politique: un ton, des valeurs, des thématiques, des cibles, une posture ...
+        
+        Cette approche illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites.
+        """)
     # Explications sous le graphique
     st.markdown("""
     ---
     
     ### 🧠 Comment interpréter cette visualisation
+    Pourquoi ce graphique n'a pas de nom d'axe ?
+    => Car c'est une réduction de dimensionalité. C'est comme si on faisait un graphique de ce que vous êtes en des centaines de dimensions, et qu'on en gardait l'essentiel pour visualiser votre positionnement en 2D !
     
-    - **Positionnement** : La distance entre les points représente leur proximité idéologique
-    - **Couleur** : L'intensité de la couleur indique le niveau d'engagement politique
-    - **Label** : Le nom de la chaîne apparaît au survol ou à côté du point
+    - La distance entre les points représente leur PROXIMITE POLITIQUE, au regard des critères d'analyses (voir variables en dessous)
+    - **Couleur** : L'intensité de la couleur indique le niveau d'engagement politique (charge politique latente)
     
     Cette analyse combine techniques quantitatives et qualitatives pour cartographier le paysage politique des influenceurs YouTube.
     """)
@@ -706,17 +717,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
         st.dataframe(df_descr, height=400)
         
-        st.markdown("""
-        ---
         
-        ### 🎯 Objectif du projet
-        
-        Cette visualisation cherche à représenter l'identité politique des influenceurs YouTube à partir de plusieurs dimensions qualitatives et quantitatives extraites de leurs discours.
-        
-        L'analyse des scripts extrait automatiquement un ensemble de données relatives à un profil, une identité, une pratique, une posture ou une portée politique.
-        
-        Cette approche illustre comment une analyse NLP peut combiner **quantitatif** et **qualitatif** pour appréhender des logiques politiques implicites.
-        """)
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
     <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
@@ -1002,6 +1003,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
