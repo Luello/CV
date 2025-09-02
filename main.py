@@ -1,140 +1,128 @@
-import os
-import re
-import base64
-from collections import Counter
-
-import numpy as np
-import pandas as pd
 import streamlit as st
-import plotly.express as px
+import pandas as pd
 import plotly.graph_objects as go
-
 from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import PCA
+import numpy as np
+import ast
+import plotly.express as px
+import re
+from collections import Counter
+import base64
+from pathlib import Path
 
 # =========================
-# CONFIG GLOBALE
+# CONFIG APP
 # =========================
 st.set_page_config(page_title="Théo Bernad — CV & Portfolio", page_icon="📊", layout="wide")
 
+if "nav" not in st.session_state:
+    st.session_state["nav"] = "🏠 Accueil"
+
 # =========================
-# STYLES (UNIFIÉS)
+# STYLES (clair, harmonisé, largeur maîtrisée)
 # =========================
 st.markdown("""
 <style>
-/* Nettoyage */
-#MainMenu, footer {visibility: hidden;}
-.block-container {padding-top: 1rem;}
-
-/* Palette claire */
 :root{
-  --text:#111827;        /* slate-900 */
-  --muted:#475569;       /* slate-600 */
-  --chip:#e5e7eb;        /* gray-200 */
-  --chipText:#111827;
-  --border:#e5e7eb;      /* gray-200 */
-  --card:#ffffff;        /* white */
-  --cardGrad:#fafafa;    /* very light */
-  --primary:#2563eb;     /* blue-600 */
-  --primaryText:#ffffff;
+  --app-bg:#f6f8fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#475569;
+  --border:#e6e9f0;
+  --chip:#eef2f7;
+  --chip-text:#0f172a;
+  --primary:#2563eb;
+  --primary-fore:#ffffff;
+  --shadow:0 10px 28px rgba(15,23,42,.06);
+  --shadow-soft:0 4px 14px rgba(15,23,42,.08);
 }
+.stApp {background: linear-gradient(180deg,#fbfcff 0%, var(--app-bg) 100%) !important;}
+.block-container {padding-top: 1.0rem !important; max-width: 1080px !important; margin: auto !important;}
+#MainMenu, footer {visibility: hidden;}
 
 /* Sidebar radio lisible */
-section[data-testid="stSidebar"] .stRadio > label { font-size: 1.05rem; font-weight: 600; }
+section[data-testid="stSidebar"] .stRadio > label { font-size: 1.04rem; font-weight: 700; }
 section[data-testid="stSidebar"] .stRadio div { padding: .35rem 0; }
 
-/* HERO clair */
+/* HERO compact */
 .hero {
-  border-radius: 18px; padding: 26px;
-  background: linear-gradient(135deg, var(--card) 0%, var(--cardGrad) 80%);
-  color: var(--text); border: 1px solid var(--border);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+  display: grid; grid-template-columns: 0.9fr 1.4fr; gap: 24px;
+  border-radius: 18px; padding: 24px;
+  background: linear-gradient(160deg, var(--card) 0%, #fafbff 85%) !important;
+  color: var(--text) !important; border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
 }
-.hero h1 {font-size: 2.0rem; margin: 0 0 6px 0; letter-spacing: .2px; color: var(--text);}
-.hero p.lead {font-size: 1.02rem; color: var(--muted); margin: 6px 0 14px 0; line-height: 1.55;}
+@media (max-width: 960px){ .hero { grid-template-columns: 1fr; } }
 
-/* Photo */
-.photo img {border-radius: 14px; width: 100%; height:auto; object-fit:cover; border:1px solid var(--border);}
+.hero h1 { font-size: 2.1rem; margin: 0 0 6px 0; letter-spacing:.2px; color: var(--text) !important; }
+.accent { height: 3px; width: 120px; background: var(--primary);
+          border-radius: 2px; margin: 4px 0 14px 0; }
+.lead { font-size: 1.02rem; line-height: 1.55; color: var(--muted) !important; margin: 0 0 14px 0; }
 
-/* Badges stacks */
-.badges span{
-  display:inline-block; margin: 6px 8px 0 0; padding: 7px 12px;
-  border: 1px solid var(--border); border-radius: 999px; font-size:.88rem; color:var(--chipText);
-  background: #f8fafc; /* slate-50 */
-}
-
-/* CTA clair */
-.cta a{
-  text-decoration:none; display:inline-block; margin-right:10px; margin-top:10px;
-  padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#ffffff; color:var(--text);
-  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
-}
-.cta a.primary{background:var(--primary); border-color:var(--primary); color:var(--primaryText);}
-.cta a:hover{transform: translateY(-1px); filter:brightness(1.04); box-shadow:0 4px 14px rgba(37,99,235,.18);}
-
-/* Preview bloc (clair) */
-.preview { margin-top: 12px; border-radius: 12px; overflow: hidden; border:1px solid var(--border); background:#ffffff; }
-.preview img {width:100%; display:block;}
-.caption {font-size:.92rem; color:#64748b; margin-top:6px;}  /* slate-500 */
-
-/* Pills métriques (clair) */
-.pills span{
-  display:inline-block; margin:6px 8px 0 0; padding:6px 10px; border-radius:999px;
-  background: #f1f5f9; /* slate-100 */ border:1px solid var(--border); font-size:.85rem; color:#334155;
+/* Colonne gauche (photo + gif) */
+.photo { border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
+         box-shadow: var(--shadow-soft); background:#fff; }
+.photo img { width:100%; height:auto; display:block; }
+.gifwrap {
+  margin-top:12px; border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  box-shadow: var(--shadow-soft); background:#fff;
 }
 
-/* Divider subtil */
-.divider {height:1px; background: var(--border); margin: 14px 0 10px 0; border-radius:1px;}
-
-/* Titles */
-h2, h3 { color: var(--text); }
-
-/* Cards simples */
-.card {
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:16px;
-  background:#fff;
+/* Badges */
+.badges { margin-top: 6px; display:flex; flex-wrap:wrap; }
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  margin: 6px 8px 0 0; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--chip); color: var(--chip-text); font-size: .86rem;
+  box-shadow: 0 1px 1px rgba(15,23,42,.04);
 }
+.dot { width:8px; height:8px; border-radius:999px; display:inline-block; }
+.dot.py {background:#16a34a;}   .dot.sql{background:#0ea5e9;}   .dot.qlk{background:#8b5cf6;}
+.dot.sta{background:#f59e0b;}   .dot.dja{background:#0ea5e9;}   .dot.af {background:#ef4444;}
+.dot.aws{background:#f97316;}   .dot.dl {background:#22c55e;}   .dot.emb{background:#64748b;}
+.dot.git{background:#f43f5e;}   .dot.bash{background:#22d3ee;}  .dot.spark{background:#fb923c;}
+
+/* CTA */
+.cta { display:flex; gap:10px; flex-wrap:wrap; }
+.btn {
+  text-decoration:none; display:inline-block;
+  padding:10px 14px; border-radius:12px; border:1px solid var(--border);
+  background:#fff; color: var(--text); transition: all .15s ease;
+  box-shadow: 0 2px 6px rgba(15,23,42,.05);
+  font-size:.95rem;
+}
+.btn.primary { background: var(--primary); border-color: var(--primary);
+               color: var(--primary-fore); box-shadow: 0 8px 18px rgba(37,99,235,.22); }
+.btn:hover { transform: translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.10); }
+
+/* Sections */
+.rule { height:2px; background: var(--border); border-radius:2px; margin: 16px 0 12px 0; }
+.section { border:1px solid var(--border); background:#fff; border-radius:12px;
+           box-shadow: var(--shadow-soft); padding:16px; margin-top:14px; }
+.section h3 { margin-top:0; color:var(--text); }
+
+/* Pills */
+.pills { display:flex; flex-wrap:wrap; gap:8px; }
+.pill {
+  display:inline-block; padding:7px 12px; border-radius:999px;
+  background:#f1f5f9; border:1px solid var(--border); color:#334155; font-size:.85rem;
+  box-shadow: 0 1px 1px rgba(15,23,42,.04);
+}
+
+/* List */
+ul.clean { margin:0; padding-left: 1.1rem; color: var(--text); }
+ul.clean li { margin: .35rem 0; }
+.caption { font-size:.9rem; color:#64748b; margin-top:6px; text-align:center; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# HELPERS
+# NAVIGATION
 # =========================
-def file_exists(path: str) -> bool:
-    try:
-        return os.path.isfile(path) and os.path.getsize(path) > 0
-    except Exception:
-        return False
-
-@st.cache_data(show_spinner=False)
-def load_image_bytes(path: str) -> bytes | None:
-    if not file_exists(path):
-        return None
-    try:
-        with open(path, "rb") as f:
-            return f.read()
-    except Exception:
-        return None
-
-def download_button_from_file(path: str, label: str, mime: str = "application/octet-stream"):
-    if not file_exists(path):
-        st.caption("⚠️ Fichier non trouvé : " + path)
-        return
-    with open(path, "rb") as f:
-        b64 = base64.b64encode(f.read()).decode()
-    href = f'<a download="{os.path.basename(path)}" href="data:{mime};base64,{b64}" class="primary" style="text-decoration:none;">{label}</a>'
-    st.markdown(href, unsafe_allow_html=True)
-
-# =========================
-# ÉTAT & NAVIGATION
-# =========================
-if "nav" not in st.session_state:
-    st.session_state["nav"] = "🏠 Accueil"
-
 page = st.sidebar.radio(
     "📁 Navigation :",
     [
@@ -153,88 +141,134 @@ page = st.sidebar.radio(
 )
 
 # =========================
-# CONTENU PAGES
+# UTILS
 # =========================
+def safe_image(path: str, **kw):
+    p = Path(path)
+    kw.setdefault("use_column_width", True)
+    if p.exists():
+        st.image(str(p), **kw)
+    else:
+        st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
 
-# --- PAGE ACCUEIL ---
+def gif_base64_into_container(path: str):
+    """Affiche un GIF en base64 dans un conteneur harmonisé (utilisé sous la photo)."""
+    p = Path(path)
+    if p.exists():
+        with open(path, "rb") as f:
+            data_url = base64.b64encode(f.read()).decode("utf-8")
+        st.markdown(
+            f'<div class="gifwrap">'
+            f'<img src="data:image/gif;base64,{data_url}" alt="aperçu clustering" style="width:100%; display:block;">'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="caption">Aperçu 15s — clustering / exploration sémantique</div>',
+                    unsafe_allow_html=True)
+    else:
+        st.caption("GIF introuvable — placez `cluster.gif` à la racine.")
+
+# =========================
+# PAGE: ACCUEIL
+# =========================
 if page == "🏠 Accueil":
+    # HERO (photo + gif en dessous) / (intro + stacks + CTA)
     st.markdown('<div class="hero">', unsafe_allow_html=True)
-    colL, colR = st.columns([1, 1.85], vertical_alignment="center")
+    colL, colR = st.columns([0.9, 1.4])
 
     with colL:
         st.markdown('<div class="photo">', unsafe_allow_html=True)
-        # Mets un portrait "photo.jpg" si tu veux
-        if file_exists("photo.jpg"):
-            st.image("photo.jpg", use_column_width=True)
-        else:
-            st.image(
-                "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop",
-                use_column_width=True,
-                caption="(remplace 'photo.jpg' dans le dossier pour afficher ta photo)"
-            )
+        safe_image("photo.jpg")
         st.markdown('</div>', unsafe_allow_html=True)
+        # 👉 GIF placé SOUS la photo (même colonne)
+        gif_base64_into_container("cluster.gif")
 
     with colR:
         st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
+        st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(
             '<p class="lead">Data scientist polyvalent, j’allie expertise technique et rigueur analytique '
             'pour fournir des solutions fiables et utiles aux décisions stratégiques.</p>',
             unsafe_allow_html=True
         )
+
+        # Stacks (incluant Git, Bash, Spark)
         st.markdown(
             '<div class="badges">'
-            '<span>🐍 Python</span>'
-            '<span>🗄️ SQL</span>'
-            '<span>📊 Qlik</span>'
-            '<span>📐 Statistiques</span>'
-            '<span>🌐 Django</span>'
-            '<span>🛠️ Airflow</span>'
-            '<span>☁️ AWS</span>'
-            '<span>🧠 PyTorch / TensorFlow</span>'
-            '<span>🧩 Embeddings</span>'
+            '<span class="badge"><span class="dot py"></span>Python</span>'
+            '<span class="badge"><span class="dot sql"></span>SQL</span>'
+            '<span class="badge"><span class="dot qlk"></span>Qlik</span>'
+            '<span class="badge"><span class="dot sta"></span>Statistiques</span>'
+            '<span class="badge"><span class="dot dja"></span>Django</span>'
+            '<span class="badge"><span class="dot af"></span>Airflow</span>'
+            '<span class="badge"><span class="dot aws"></span>AWS</span>'
+            '<span class="badge"><span class="dot dl"></span>PyTorch / TensorFlow</span>'
+            '<span class="badge"><span class="dot emb"></span>Embedding</span>'
+            '<span class="badge"><span class="dot git"></span>Git</span>'
+            '<span class="badge"><span class="dot bash"></span>Bash</span>'
+            '<span class="badge"><span class="dot spark"></span>Spark</span>'
             '</div>', unsafe_allow_html=True
         )
 
         # CTA
-        MAIL = "mailto:prenom.nom@mail.com"  # <- remplace
-        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <- remplace
+        MAIL = "mailto:prenom.nom@mail.com"           # <-- remplace
+        LINKEDIN = "https://www.linkedin.com/in/ton-profil"  # <-- remplace
         st.markdown(
             f'<div class="cta">'
-            f'<a class="primary" href="{MAIL}">📬 Discutons Data</a>'
-            f'<a href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
+            f'<a class="btn primary" href="{MAIL}">📬 Discutons Data</a>'
+            f'<a class="btn" href="{LINKEDIN}" target="_blank">🔗 LinkedIn</a>'
             f'</div>',
             unsafe_allow_html=True
         )
 
-        # Aperçu visuel + pitch métier + bouton vers démo/projet
-        col_prev, col_cta = st.columns([1.7, 1], gap="medium")
-        with col_prev:
-            st.markdown('<div class="preview">', unsafe_allow_html=True)
- # <- ta demande : remplacement du GIF par pol_plot.png
-            if img_bytes:
-                st.image(img_bytes, use_column_width=True)
-                st.markdown('<div class="caption">Cartographie narrative — aperçu</div>', unsafe_allow_html=True)
-            else:
-                st.write("🔎 Place un fichier **pol_plot.png** à la racine du projet pour l’aperçu.")
-            st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)  # /hero
 
-        with col_cta:
-            st.write("**Applications métier**")
-            st.write("- Veille réputation & risques\n- Intelligence média / influence\n- Analytics audience & produit")
-            if st.button("👉 Voir la démo de la cartographie"):
-                st.session_state["nav"] = "▶️ NLP: Analyse de l'identité politique des influenceurs Youtube"
-                st.rerun()
+    # ===== Sections sous le hero =====
+    # Applications métier
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Applications métier")
+    st.markdown('<ul class="clean">'
+                '<li>Veille réputation & risques</li>'
+                '<li>Intelligence média / influence</li>'
+                '<li>Analytics audience & produit</li>'
+                '</ul>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="pills">'
-            '<span>RH (Marine) & Client Analytics (App)</span>'
-            '<span>7 dashboards / rapports livrés</span>'
-            '<span>300k+ lignes intégrées</span>'
-            '<span>2 pipelines NLP/embeddings</span>'
-            '<span>10+ sources agrégées</span>'
-            '</div>', unsafe_allow_html=True
-        )
+    # Disponibilités (nouvelle section)
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Disponibilités & mobilité")
+    st.markdown(
+        '<div class="pills">'
+        '<span class="pill">Disponibilités : Freelance, CDI</span>'
+        '<span class="pill">Mobilité : France & International</span>'
+        '</div>', unsafe_allow_html=True
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Livrables & volumétrie
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Livrables & volumétrie")
+    st.markdown(
+        '<div class="pills">'
+        '<span class="pill">7 dashboards / rapports livrés</span>'
+        '<span class="pill">300k+ lignes intégrées</span>'
+        '<span class="pill">2 pipelines NLP / embeddings</span>'
+        '<span class="pill">10+ sources agrégées</span>'
+        '</div>', unsafe_allow_html=True
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Types de données
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown("### Types de données maîtrisées")
+    st.markdown(
+        '<div class="pills">'
+        '<span class="pill">Transactionnelles (commerce, ventes, CRM)</span>'
+        '<span class="pill">Textuelles (NLP : titres, descriptions, commentaires)</span>'
+        '<span class="pill">Séries temporelles (logs, métriques, événements)</span>'
+        '<span class="pill">RH / People Analytics (effectifs, mobilité, indicateurs)</span>'
+        '</div>', unsafe_allow_html=True
+    )
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("👉 Parcours les projets via la barre latérale. Chaque page contient une **démo** et un **résumé en 20 secondes**.")
@@ -985,6 +1019,7 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
 
 
