@@ -1,11 +1,12 @@
 # --- CSS global (ajoute/merge avec le tien) ---
 import streamlit as st 
 import pandas as pd 
-import plotly.graph_objects as go from sklearn.manifold 
-import TSNE from sklearn.cluster 
-import KMeans from sklearn.feature_extraction.text 
-import CountVectorizer from sklearn.decomposition 
-import PCA import numpy as np 
+import plotly.graph_objects as go 
+from sklearn.manifold import TSNE 
+from sklearn.cluster import KMeans 
+from sklearn.feature_extraction.text import CountVectorizer 
+from sklearn.decomposition import PCA 
+import numpy as np 
 import ast import plotly.express as px 
 import re from collections 
 import Counter 
@@ -754,4 +755,5 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         # Visualiser les chansons de l'artiste
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
+
 
