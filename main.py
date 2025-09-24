@@ -1216,10 +1216,184 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             # Sélection du type d'analyse
             analysis_type = st.sidebar.selectbox(
                 "Type d'analyse",
-                ["Évolution temporelle", "Analyse par arrondissement", "Statistiques générales"]
+                ["Carte des accidents", "Évolution temporelle", "Analyse par arrondissement", "Statistiques générales"]
             )
 
-            if analysis_type == "Évolution temporelle":
+            if analysis_type == "Carte des accidents":
+                st.header("Cartographie des accidents à Paris")
+                
+                # Filtres dans la barre latérale
+                st.sidebar.subheader("Filtres de la carte")
+                
+                # Sélection des catégories d'usagers
+                categories = sorted(df_periode['type_usager'].unique())
+                selected_categories = st.sidebar.multiselect(
+                    "Types d'usagers",
+                    options=categories,
+                    default=categories,
+                    key='categories_filter'
+                )
+                
+                # Sélection des niveaux de gravité
+                gravity_levels = ['Tué', 'Blessé hospitalisé', 'Blessé léger']
+                selected_gravity = st.sidebar.multiselect(
+                    "Niveaux de gravité",
+                    options=gravity_levels,
+                    default=gravity_levels,
+                    key='gravity_filter'
+                )
+
+                # Paramètres de la heatmap
+                st.sidebar.subheader("Paramètres de la carte de chaleur")
+                show_heatmap = st.sidebar.checkbox("Afficher la carte de chaleur", value=True)
+                
+                if show_heatmap:
+                    heatmap_radius = st.sidebar.slider(
+                        "Rayon de la zone de chaleur",
+                        min_value=10,
+                        max_value=50,
+                        value=25,
+                        help="Ajuste la taille des zones de chaleur"
+                    )
+                    
+                    heatmap_blur = st.sidebar.slider(
+                        "Flou de la carte de chaleur",
+                        min_value=5,
+                        max_value=30,
+                        value=15,
+                        help="Ajuste le niveau de flou entre les zones"
+                    )
+                    
+                    heatmap_intensity = st.sidebar.slider(
+                        "Intensité de la carte de chaleur",
+                        min_value=0.1,
+                        max_value=1.0,
+                        value=0.6,
+                        step=0.1,
+                        help="Ajuste l'intensité globale de la carte de chaleur"
+                    )
+                    
+                # Paramètres des marqueurs
+                st.sidebar.subheader("Paramètres des marqueurs")
+                marker_size = st.sidebar.slider(
+                    "Taille des marqueurs",
+                    min_value=3,
+                    max_value=15,
+                    value=8,
+                    help="Ajuste la taille des points sur la carte"
+                )
+                
+                marker_opacity = st.sidebar.slider(
+                    "Opacité des marqueurs",
+                    min_value=0.1,
+                    max_value=1.0,
+                    value=0.7,
+                    step=0.1,
+                    help="Ajuste la transparence des points"
+                )
+
+                if not selected_categories or not selected_gravity:
+                    st.warning("Veuillez sélectionner au moins une catégorie d'usager et un niveau de gravité.")
+                else:
+                    # Filtrage des données
+                    filtered_data = df_periode[
+                        (df_periode['type_usager'].isin(selected_categories)) &
+                        (df_periode['gravite_combinee'].isin(selected_gravity))
+                    ]
+                    
+                    if filtered_data.empty:
+                        st.warning("Aucun accident trouvé avec les critères sélectionnés.")
+                    else:
+                        st.info(f"Affichage de {len(filtered_data):,} accidents sur la carte")
+                        
+                        # Création de la carte
+                        def create_accident_map(df):
+                            import folium
+                            from folium.plugins import HeatMap, MarkerCluster
+                            
+                            m = folium.Map(location=[48.8566, 2.3522], zoom_start=12,
+                                            tiles='cartodbpositron')
+                                
+                            # Création d'un cluster de marqueurs
+                            marker_cluster = MarkerCluster(
+                                options={
+                                    'maxClusterRadius': 50,
+                                    'disableClusteringAtZoom': 15
+                                }
+                            )
+
+                            # Ajout de la carte de chaleur si activée
+                            if show_heatmap:
+                                heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                                if heat_data:
+                                    HeatMap(
+                                        heat_data,
+                                        name="Carte de chaleur",
+                                        min_opacity=0.3 * heatmap_intensity,
+                                        max_zoom=18,
+                                        radius=heatmap_radius,
+                                        blur=heatmap_blur,
+                                        gradient={
+                                            0.4: 'blue',
+                                            0.6: 'yellow',
+                                            0.8: 'orange',
+                                            1.0: 'red'
+                                        }
+                                    ).add_to(m)
+
+                            # Couleurs par gravité
+                            colors = {
+                                'Tué': 'red',
+                                'Blessé hospitalisé': 'orange',
+                                'Blessé léger': 'yellow'
+                            }
+
+                            # Ajout des marqueurs
+                            for _, row in df.iterrows():
+                                # Taille du marqueur basée sur la gravité
+                                size = {
+                                    'Tué': marker_size + 3,
+                                    'Blessé hospitalisé': marker_size + 1,
+                                    'Blessé léger': marker_size
+                                }[row['gravite_combinee']]
+                                
+                                # Création du marqueur
+                                folium.CircleMarker(
+                                    location=[row['latitude'], row['longitude']],
+                                    radius=size,
+                                    color=colors[row['gravite_combinee']],
+                                    fill=True,
+                                    fillOpacity=marker_opacity,
+                                    popup=f"<b>{row['gravite_combinee']}</b><br>Type: {row['type_usager']}<br>Date: {row['date']}"
+                                ).add_to(marker_cluster)
+                            
+                            # Ajout du cluster à la carte
+                            marker_cluster.add_to(m)
+                            
+                            # Ajout du contrôle des couches
+                            folium.LayerControl().add_to(m)
+                            
+                            return m
+
+                        # Affichage de la carte
+                        m = create_accident_map(filtered_data)
+                        st.components.v1.html(m._repr_html_(), height=600)
+                        
+                        # Statistiques rapides
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("Total accidents", len(filtered_data))
+                        with col2:
+                            morts = len(filtered_data[filtered_data['gravite_combinee'] == 'Tué'])
+                            st.metric("Accidents mortels", morts)
+                        with col3:
+                            blesses = len(filtered_data[filtered_data['gravite_combinee'] == 'Blessé hospitalisé'])
+                            st.metric("Blessés hospitalisés", blesses)
+                        with col4:
+                            legers = len(filtered_data[filtered_data['gravite_combinee'] == 'Blessé léger'])
+                            st.metric("Blessés légers", legers)
+
+            elif analysis_type == "Évolution temporelle":
                 st.header("Évolution temporelle des accidents")
                 
                 # Préparation des données pour l'évolution temporelle
@@ -1338,6 +1512,123 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         }
                     )
                     st.plotly_chart(fig_gravity, use_container_width=True)
+                    
+                    # Cartes détaillées pour l'arrondissement
+                    st.subheader(f"Cartographie détaillée - Arrondissement {arr_analysis}")
+                    
+                    # Création des sous-onglets pour les différentes vues de la carte
+                    tab_points, tab_heatmap = st.tabs(["Carte détaillée", "Carte de chaleur"])
+                    
+                    with tab_points:
+                        st.subheader(f"Carte détaillée des accidents - Arrondissement {arr_analysis}")
+                        
+                        def create_arrondissement_map(df):
+                            import folium
+                            from folium.plugins import MarkerCluster
+                            
+                            m = folium.Map(
+                                location=[df['latitude'].mean(), df['longitude'].mean()],
+                                zoom_start=15,
+                                tiles='cartodbpositron'
+                            )
+                            
+                            # Création d'un cluster de marqueurs
+                            marker_cluster = MarkerCluster(
+                                options={
+                                    'maxClusterRadius': 30,
+                                    'disableClusteringAtZoom': 16
+                                }
+                            )
+                            
+                            # Couleurs par gravité
+                            colors = {
+                                'Tué': 'red',
+                                'Blessé hospitalisé': 'orange',
+                                'Blessé léger': 'yellow'
+                            }
+                            
+                            # Ajout des marqueurs avec popups détaillés
+                            for _, accident in df.iterrows():
+                                # Création du popup HTML
+                                resume_html = f"""
+                                <div style="font-family: Arial; font-size: 12px;">
+                                    <b>{accident['gravite_combinee']}</b><br>
+                                    <b>Type:</b> {accident['type_usager']}<br>
+                                    <b>Date:</b> {accident['date']}<br>
+                                    <b>Heure:</b> {accident['date_heure'].strftime('%H:%M')}
+                                </div>
+                                """
+                                
+                                # Création du marqueur
+                                marker = folium.CircleMarker(
+                                    location=[accident['latitude'], accident['longitude']],
+                                    radius=8,
+                                    color=colors[accident['gravite_combinee']],
+                                    fill=True,
+                                    fillOpacity=0.7,
+                                    popup=folium.Popup(resume_html, max_width=300)
+                                )
+                                marker.add_to(marker_cluster)
+                            
+                            # Ajout du cluster à la carte
+                            marker_cluster.add_to(m)
+                            
+                            # Ajout du contrôle des couches
+                            folium.LayerControl().add_to(m)
+                            
+                            return m
+                        
+                        # Affichage de la carte
+                        m_points = create_arrondissement_map(df_filtered)
+                        st.components.v1.html(m_points._repr_html_(), height=600)
+                    
+                    with tab_heatmap:
+                        st.subheader(f"Carte de chaleur des zones à risque - Arrondissement {arr_analysis}")
+                        
+                        def create_arrondissement_heatmap(df):
+                            import folium
+                            from folium.plugins import HeatMap
+                            
+                            m = folium.Map(
+                                location=[df['latitude'].mean(), df['longitude'].mean()],
+                                zoom_start=15,
+                                tiles='cartodbpositron'
+                            )
+                            
+                            # Création des données pour la heatmap avec pondération par gravité
+                            heat_data = []
+                            for _, accident in df.iterrows():
+                                weight = {
+                                    'Tué': 10,
+                                    'Blessé hospitalisé': 5,
+                                    'Blessé léger': 1
+                                }[accident['gravite_combinee']]
+                                heat_data.append([accident['latitude'], accident['longitude'], weight])
+                            
+                            # Ajout de la heatmap
+                            HeatMap(
+                                heat_data,
+                                name="Zones à risque",
+                                min_opacity=0.3,
+                                max_zoom=18,
+                                radius=25,
+                                blur=15,
+                                gradient={
+                                    0.4: 'blue',
+                                    0.6: 'yellow',
+                                    0.8: 'orange',
+                                    1.0: 'red'
+                                }
+                            ).add_to(m)
+                            
+                            # Ajout du contrôle des couches
+                            folium.LayerControl().add_to(m)
+                            
+                            return m
+                        
+                        # Affichage de la carte de chaleur
+                        m_heat = create_arrondissement_heatmap(df_filtered)
+                        st.components.v1.html(m_heat._repr_html_(), height=600)
                     
                 else:
                     st.warning(f"Aucun accident trouvé dans l'arrondissement {arr_analysis} avec les filtres sélectionnés.")
