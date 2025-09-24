@@ -1006,7 +1006,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
     st.title("🚨 Analyse d'Accidentologie à Paris")
     
     # Onglets pour séparer présentation et application
-    tab_presentation, tab_application = st.tabs(["📋 Présentation", "🚀 Application"])
+    tab_application, tab_presentation = st.tabs(["🚀 Application", "📋 Présentation"])
     
     with tab_presentation:
         st.markdown("""
@@ -1083,25 +1083,13 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
         # Liens vers le projet
         st.markdown("### 🔗 Liens du projet")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div style="text-align: center; padding: 20px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.08);">
-                <h4>📁 Code Source</h4>
-                <p>Repository GitHub avec le code complet</p>
-                <a href="https://github.com/Luello/Accidentologie-Paris" target="_blank" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px;">Voir sur GitHub</a>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div style="text-align: center; padding: 20px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.08);">
-                <h4>🚀 Application Live</h4>
-                <p>Testez l'application directement</p>
-                <a href="https://accidentologie-paris.streamlit.app" target="_blank" style="display: inline-block; padding: 10px 20px; background: #16a34a; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px;">Lancer l'app</a>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.08);">
+            <h4>📁 Code Source</h4>
+            <p>Repository GitHub avec le code complet</p>
+            <a href="https://github.com/Luello/Accidentologie-Paris" target="_blank" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px;">Voir sur GitHub</a>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Cas d'usage
         st.markdown("### 🎯 Cas d'usage")
