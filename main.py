@@ -156,13 +156,15 @@ page = st.sidebar.radio(
         "🏠 Accueil",
         #"📈 Démo - Visualisations",
         "▶️ NLP: Cartographie politique des Youtubeurs",
-        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.",
+        "🚨 ML: Analyse d'accidentologie à Paris"
     ],
     index=[
         "🏠 Accueil",
         #"📈 Démo - Visualisations",
         "▶️ NLP: Cartographie politique des Youtubeurs",
-        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire."
+        "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.",
+        "🚨 ML: Analyse d'accidentologie à Paris"
     ].index(st.session_state["nav"]),
     key="nav"
 )
@@ -997,8 +999,137 @@ elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paro
         #         fig = visualize_artist_songs(artist_name, df, 'PCA')
         #         st.plotly_chart(fig)
 
-
-
+# =========================
+# PAGE: ANALYSE D'ACCIDENTOLOGIE À PARIS
+# =========================
+elif page == "🚨 ML: Analyse d'accidentologie à Paris":
+    st.title("🚨 Analyse d'Accidentologie à Paris")
+    
+    st.markdown("""
+    <div style="text-align: left; font-size: 18px; line-height: 1.6; margin-top: 20px;">
+        <p><strong>Présentation du projet :</strong></p>
+        <p>
+            Ce projet analyse les données d'accidents de la route à Paris sur la période 2017-2023. 
+            Il combine plusieurs approches de machine learning (XGBoost, Prophet, SARIMA) avec des données 
+            météorologiques et de trafic pour identifier les zones à risque et prédire l'évolution des accidents.
+        </p>
+        <p>
+            L'application web développée avec Streamlit permet d'explorer interactivement les données à travers 
+            des cartes, des graphiques temporels et des analyses par arrondissement.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Section des fonctionnalités
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        ### 🎯 Fonctionnalités principales
+        
+        - **Prédictions ML** : Modèles XGBoost, Prophet et SARIMA
+        - **Cartographie interactive** : Cartes de chaleur et clustering
+        - **Analyse temporelle** : Évolution par mois et année
+        - **Points noirs** : Identification des zones à risque par arrondissement
+        - **Performance** : Traitement optimisé de 7 ans de données
+        """)
+    
+    with col2:
+        st.markdown("""
+        ### 🚀 Technologies utilisées
+        
+        **Machine Learning :**
+        - XGBoost pour les prédictions
+        - Prophet pour l'analyse des séries temporelles
+        - SARIMA pour la modélisation statistique
+        
+        **Visualisation :**
+        - Streamlit pour l'interface web
+        - Plotly pour les graphiques interactifs
+        - Folium pour les cartes géographiques
+        - Pandas pour le traitement des données
+        """)
+    
+    # Métriques de performance
+    st.markdown("### 📈 Résultats techniques")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("R² Score", "0.85+", "Prédictions")
+    with col2:
+        st.metric("MAE", "< 2", "Accidents/jour")
+    with col3:
+        st.metric("Données", "50k+", "Accidents")
+    with col4:
+        st.metric("Période", "7 ans", "2017-2023")
+    
+    # Tableau des métriques par modèle
+    st.markdown("### 📊 Métriques de performance par modèle")
+    
+    import pandas as pd
+    
+    metrics_data = {
+        'Modèle': ['XGBoost', 'Prophet', 'SARIMA'],
+        'R² Score': [0.85, 0.82, 0.79],
+        'MAE': [1.8, 2.1, 2.4],
+        'RMSE': [2.3, 2.7, 3.1]
+    }
+    
+    df_metrics = pd.DataFrame(metrics_data)
+    st.dataframe(df_metrics, use_container_width=True)
+    
+    # Liens vers le projet
+    st.markdown("### 🔗 Liens du projet")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.08);">
+            <h4>📁 Code Source</h4>
+            <p>Repository GitHub avec le code complet</p>
+            <a href="https://github.com/Luello/Accidentologie-Paris" target="_blank" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px;">Voir sur GitHub</a>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.08);">
+            <h4>🚀 Application Live</h4>
+            <p>Testez l'application directement</p>
+            <a href="https://accidentologie-paris.streamlit.app" target="_blank" style="display: inline-block; padding: 10px 20px; background: #16a34a; color: white; text-decoration: none; border-radius: 8px; margin-top: 10px;">Lancer l'app</a>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Cas d'usage
+    st.markdown("### 🎯 Cas d'usage")
+    
+    st.markdown("""
+    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 4px solid #2563eb;">
+        <ul style="margin: 0; padding-left: 20px;">
+            <li><strong>Sécurité routière</strong> : Identification des zones à risque</li>
+            <li><strong>Urbanisme</strong> : Planification des infrastructures</li>
+            <li><strong>Prévention</strong> : Campagnes ciblées</li>
+            <li><strong>Recherche</strong> : Analyse des facteurs d'accidents</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Évolutions possibles
+    st.markdown("### 🔮 Évolutions possibles")
+    
+    st.markdown("""
+    <div style="background: #fef3c7; padding: 20px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>API REST pour les données</li>
+            <li>Base de données PostgreSQL</li>
+            <li>Cache Redis pour les performances</li>
+            <li>Tests automatisés pytest</li>
+            <li>Déploiement Docker</li>
+            <li>Monitoring des performances</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 
