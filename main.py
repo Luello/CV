@@ -1216,7 +1216,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             # Sélection du type d'analyse
             analysis_type = st.sidebar.selectbox(
                 "Type d'analyse",
-                ["Carte des accidents", "Évolution temporelle", "Analyse par arrondissement", "Statistiques générales"]
+                ["Carte des accidents", "Évolution temporelle animée", "Évolution temporelle", "Analyse par arrondissement", "Statistiques générales"]
             )
 
             if analysis_type == "Carte des accidents":
@@ -1392,6 +1392,387 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         with col4:
                             legers = len(filtered_data[filtered_data['gravite_combinee'] == 'Blessé léger'])
                             st.metric("Blessés légers", legers)
+
+            elif analysis_type == "Évolution temporelle animée":
+                st.header("Évolution temporelle animée des accidents")
+                
+                # Ajout des filtres dans la barre latérale
+                st.sidebar.subheader("Filtres de l'animation")
+                
+                # Sélection des types d'usagers
+                types_usagers = sorted(df_periode['type_usager'].unique())
+                selected_types_usagers = st.sidebar.multiselect(
+                    "Types d'usagers",
+                    options=types_usagers,
+                    default=types_usagers,
+                    key='types_usagers_filter_anim'
+                )
+                
+                # Sélection des niveaux de gravité
+                niveaux_gravite = ['Tué', 'Blessé hospitalisé', 'Blessé léger']
+                selected_gravite = st.sidebar.multiselect(
+                    "Niveaux de gravité",
+                    options=niveaux_gravite,
+                    default=niveaux_gravite,
+                    key='gravite_filter_anim'
+                )
+                
+                # Nettoyage et sélection des arrondissements
+                def clean_arrondissement(arr):
+                    if isinstance(arr, str):
+                        arr = arr.lstrip('0')
+                        return arr if arr else '1'
+                    return str(arr)
+                
+                df_periode['arrondissement'] = df_periode['arrondissement'].apply(clean_arrondissement)
+                arrondissements = sorted(df_periode['arrondissement'].unique(), key=int)
+                selected_arrondissements = st.sidebar.multiselect(
+                    "Arrondissements",
+                    options=arrondissements,
+                    default=arrondissements,
+                    key='arrondissements_filter_anim'
+                )
+                
+                # Application des filtres
+                if selected_types_usagers and selected_gravite and selected_arrondissements:
+                    df_filtered = df_periode[
+                        (df_periode['type_usager'].isin(selected_types_usagers)) &
+                        (df_periode['gravite_combinee'].isin(selected_gravite)) &
+                        (df_periode['arrondissement'].isin(selected_arrondissements))
+                    ]
+                else:
+                    st.warning("Veuillez sélectionner au moins un élément pour chaque filtre.")
+                    df_filtered = df_periode
+                
+                # Création des sous-onglets
+                tab_mois, tab_annee = st.tabs(["Évolution mensuelle", "Évolution annuelle"])
+                
+                with tab_mois:
+                    st.subheader("Évolution moyenne mensuelle (toutes années confondues)")
+                    
+                    # Préparation des données mensuelles avec les filtres appliqués
+                    df_mois = df_filtered.copy()
+                    df_mois['mois'] = df_mois['date_heure'].dt.month
+                    df_mois['mois_nom'] = df_mois['date_heure'].dt.strftime('%B')
+                    df_mois['annee'] = df_mois['date_heure'].dt.year
+                    
+                    # Création de l'ordre des mois pour le tri
+                    mois_ordre = {
+                        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                        'September': 9, 'October': 10, 'November': 11, 'December': 12
+                    }
+                    df_mois['mois_num'] = df_mois['mois_nom'].map(mois_ordre)
+                    
+                    # Liste des mois pour le slider
+                    mois_list = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                'July', 'August', 'September', 'October', 'November', 'December']
+                    
+                    # Initialisation de l'index du mois dans le state si pas déjà fait
+                    if 'month_index' not in st.session_state:
+                        st.session_state.month_index = 0
+                        st.session_state.is_playing_month = False
+                    
+                    # Contrôles pour l'animation
+                    col_slider, col_play = st.columns([4, 1])
+                    
+                    with col_slider:
+                        selected_month = st.select_slider(
+                            "Sélectionner le mois",
+                            options=mois_list,
+                            value=mois_list[st.session_state.month_index]
+                        )
+                        st.session_state.month_index = mois_list.index(selected_month)
+                    
+                    with col_play:
+                        if st.button('▶ Lecture' if not st.session_state.is_playing_month else '⏸ Pause', key='play_month'):
+                            st.session_state.is_playing_month = not st.session_state.is_playing_month
+                    
+                    # Création de la carte
+                    st.subheader("Carte des accidents")
+                    df_month = df_mois[df_mois['mois_nom'] == selected_month]
+                    
+                    # Fonction pour créer la carte mensuelle
+                    def create_monthly_heatmap(df):
+                        import folium
+                        from folium.plugins import HeatMap
+                        
+                        m = folium.Map(location=[48.8566, 2.3522], zoom_start=13,
+                                      tiles='cartodbpositron',
+                                      max_bounds=True,
+                                      min_zoom=12,
+                                      max_zoom=16)
+                        
+                        # Création des données pour la heatmap
+                        heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                        if heat_data:
+                            HeatMap(
+                                heat_data,
+                                radius=15,
+                                blur=20,
+                                min_opacity=0.4,
+                                gradient={
+                                    0.4: 'blue',
+                                    0.6: 'yellow',
+                                    0.8: 'orange',
+                                    1.0: 'red'
+                                }
+                            ).add_to(m)
+                        
+                        return m
+                    
+                    m = create_monthly_heatmap(df_month)
+                    st.components.v1.html(m._repr_html_(), height=600)
+                    
+                    # Animation
+                    if st.session_state.is_playing_month:
+                        st.session_state.month_index = (st.session_state.month_index + 1) % len(mois_list)
+                        import time
+                        time.sleep(0.5)
+                        st.rerun()
+                    
+                    # Calcul des statistiques mensuelles (tous filtres confondus)
+                    monthly_stats = df_mois.groupby(['annee', 'mois_nom', 'mois_num']).agg({
+                        'id_accident': 'count'
+                    }).reset_index()
+                    
+                    # Tri des données
+                    monthly_stats = monthly_stats.sort_values(['annee', 'mois_num'])
+                    
+                    # Création du graphique de comparaison
+                    st.subheader("Comparaison mensuelle entre les années")
+                    
+                    # Définition d'une palette de couleurs distinctes
+                    color_map = {
+                        2017: '#1f77b4',  # Bleu foncé
+                        2018: '#ff7f0e',  # Orange
+                        2019: '#2ca02c',  # Vert foncé
+                        2020: '#d62728',  # Rouge
+                        2021: '#9467bd',  # Violet
+                        2022: '#8c564b',  # Marron
+                    }
+                    
+                    fig_monthly_comparison = px.line(
+                        monthly_stats,
+                        x='mois_nom',
+                        y='id_accident',
+                        color='annee',
+                        title="Évolution mensuelle des accidents par année",
+                        category_orders={
+                            'mois_nom': mois_list
+                        },
+                        labels={
+                            'mois_nom': 'Mois',
+                            'id_accident': "Nombre d'accidents",
+                            'annee': 'Année'
+                        },
+                        color_discrete_map=color_map
+                    )
+                    
+                    # Personnalisation du graphique
+                    fig_monthly_comparison.update_layout(
+                        height=500,
+                        showlegend=True,
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        ),
+                        plot_bgcolor='white',
+                        paper_bgcolor='white'
+                    )
+                    
+                    # Amélioration de la grille
+                    fig_monthly_comparison.update_xaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray'
+                    )
+                    fig_monthly_comparison.update_yaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray'
+                    )
+                    
+                    # Ajout des points et personnalisation des lignes
+                    fig_monthly_comparison.update_traces(
+                        mode='lines+markers',
+                        line=dict(width=3),
+                        marker=dict(size=8)
+                    )
+                    
+                    # Affichage du graphique
+                    st.plotly_chart(fig_monthly_comparison, use_container_width=True)
+                    
+                    # Statistiques du mois sélectionné
+                    st.subheader(f"Statistiques pour {selected_month}")
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        total_accidents = len(df_month)
+                        st.metric("Nombre d'accidents", str(total_accidents))
+                    
+                    with col2:
+                        morts = len(df_month[df_month['gravite_combinee'] == 'Tué'])
+                        st.metric("Nombre de décès", str(morts))
+                    
+                    with col3:
+                        blesses = len(df_month[df_month['gravite_combinee'] == 'Blessé hospitalisé'])
+                        st.metric("Nombre de blessés graves", str(blesses))
+                
+                with tab_annee:
+                    st.subheader("Évolution annuelle des accidents")
+                    
+                    # Préparation des données annuelles
+                    df_annee = df_filtered.copy()
+                    df_annee['annee'] = df_annee['date_heure'].dt.year
+                    
+                    # Liste des années disponibles
+                    annees_list = sorted(df_annee['annee'].unique())
+                    
+                    # Initialisation de l'index de l'année dans le state si pas déjà fait
+                    if 'year_index' not in st.session_state:
+                        st.session_state.year_index = 0
+                        st.session_state.is_playing_year = False
+                    
+                    # Contrôles pour l'animation
+                    col_slider_year, col_play_year = st.columns([4, 1])
+                    
+                    with col_slider_year:
+                        selected_year = st.select_slider(
+                            "Sélectionner l'année",
+                            options=annees_list,
+                            value=annees_list[st.session_state.year_index]
+                        )
+                        st.session_state.year_index = annees_list.index(selected_year)
+                    
+                    with col_play_year:
+                        if st.button('▶ Lecture' if not st.session_state.is_playing_year else '⏸ Pause', key='play_year'):
+                            st.session_state.is_playing_year = not st.session_state.is_playing_year
+                    
+                    # Création de la carte pour l'année sélectionnée
+                    st.subheader(f"Carte des accidents pour l'année {selected_year}")
+                    df_year = df_annee[df_annee['annee'] == selected_year]
+                    
+                    # Fonction pour créer la carte annuelle
+                    def create_yearly_heatmap(df):
+                        import folium
+                        from folium.plugins import HeatMap
+                        
+                        m = folium.Map(location=[48.8566, 2.3522], zoom_start=13,
+                                      tiles='cartodbpositron',
+                                      max_bounds=True,
+                                      min_zoom=12,
+                                      max_zoom=16)
+                        
+                        # Création des données pour la heatmap
+                        heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                        if heat_data:
+                            HeatMap(
+                                heat_data,
+                                radius=15,
+                                blur=20,
+                                min_opacity=0.4,
+                                gradient={
+                                    0.4: 'blue',
+                                    0.6: 'yellow',
+                                    0.8: 'orange',
+                                    1.0: 'red'
+                                }
+                            ).add_to(m)
+                        
+                        return m
+                    
+                    # Placeholder pour la carte
+                    map_placeholder = st.empty()
+                    
+                    # Création de la carte pour l'année sélectionnée avec les données filtrées
+                    df_year = df_annee[df_annee['annee'] == selected_year]
+                    m = create_yearly_heatmap(df_year)
+                    
+                    # Affichage de la carte
+                    with map_placeholder:
+                        st.components.v1.html(
+                            m._repr_html_(),
+                            height=600
+                        )
+                    
+                    # Animation
+                    if st.session_state.is_playing_year:
+                        st.session_state.year_index = (st.session_state.year_index + 1) % len(annees_list)
+                        import time
+                        time.sleep(1.0)
+                        st.rerun()
+                    
+                    # Statistiques de l'année sélectionnée
+                    st.subheader(f"Statistiques pour l'année {selected_year}")
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        total_accidents_year = len(df_year)
+                        st.metric("Total accidents", str(total_accidents_year))
+                    
+                    with col2:
+                        morts_year = len(df_year[df_year['gravite_combinee'] == 'Tué'])
+                        st.metric("Accidents mortels", str(morts_year))
+                    
+                    with col3:
+                        blesses_year = len(df_year[df_year['gravite_combinee'] == 'Blessé hospitalisé'])
+                        st.metric("Blessés hospitalisés", str(blesses_year))
+                    
+                    with col4:
+                        legers_year = len(df_year[df_year['gravite_combinee'] == 'Blessé léger'])
+                        st.metric("Blessés légers", str(legers_year))
+                    
+                    # Graphique de répartition par mois pour l'année sélectionnée
+                    st.subheader(f"Répartition mensuelle pour {selected_year}")
+                    
+                    # Calcul des statistiques mensuelles pour l'année
+                    monthly_stats_year = df_year.groupby(['mois_nom', 'mois_num']).agg({
+                        'id_accident': 'count'
+                    }).reset_index()
+                    
+                    # Tri des données
+                    monthly_stats_year = monthly_stats_year.sort_values('mois_num')
+                    
+                    # Création du graphique
+                    fig_monthly_year = px.bar(
+                        monthly_stats_year,
+                        x='mois_nom',
+                        y='id_accident',
+                        title=f"Nombre d'accidents par mois en {selected_year}",
+                        labels={
+                            'mois_nom': 'Mois',
+                            'id_accident': "Nombre d'accidents"
+                        },
+                        color='id_accident',
+                        color_continuous_scale='Reds'
+                    )
+                    
+                    # Personnalisation du graphique
+                    fig_monthly_year.update_layout(
+                        height=400,
+                        showlegend=False,
+                        plot_bgcolor='white',
+                        paper_bgcolor='white'
+                    )
+                    
+                    # Amélioration de la grille
+                    fig_monthly_year.update_xaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray'
+                    )
+                    fig_monthly_year.update_yaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray'
+                    )
+                    
+                    # Affichage du graphique
+                    st.plotly_chart(fig_monthly_year, use_container_width=True)
 
             elif analysis_type == "Évolution temporelle":
                 st.header("Évolution temporelle des accidents")
