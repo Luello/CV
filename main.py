@@ -1717,8 +1717,14 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     # Graphique de répartition par mois pour l'année sélectionnée
                     st.subheader(f"Répartition mensuelle pour {selected_year}")
                     
+                    # Préparation des données pour le graphique mensuel
+                    df_year_monthly = df_year.copy()
+                    df_year_monthly['mois'] = df_year_monthly['date_heure'].dt.month
+                    df_year_monthly['mois_nom'] = df_year_monthly['date_heure'].dt.strftime('%B')
+                    df_year_monthly['mois_num'] = df_year_monthly['mois']
+                    
                     # Calcul des statistiques mensuelles pour l'année
-                    monthly_stats_year = df_year.groupby(['mois_nom', 'mois_num']).agg({
+                    monthly_stats_year = df_year_monthly.groupby(['mois_nom', 'mois_num']).agg({
                         'id_accident': 'count'
                     }).reset_index()
                     
