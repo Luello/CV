@@ -1294,25 +1294,41 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     else:
                         st.info(f"Affichage de {len(filtered_data):,} accidents sur la carte")
                         
-                        # Création de la carte
+                        # Création de la carte optimisée
+                        @st.cache_data
                         def create_accident_map(df):
                             import folium
                             from folium.plugins import HeatMap, MarkerCluster
                             
+                            # Limitation du nombre de points pour améliorer les performances
+                            max_points = 5000
+                            if len(df) > max_points:
+                                # Échantillonnage aléatoire pour les grandes datasets
+                                df_sample = df.sample(n=max_points, random_state=42)
+                                st.info(f"⚠️ Affichage de {max_points:,} accidents sur {len(df):,} (échantillonnage pour les performances)")
+                            else:
+                                df_sample = df
+                            
                             m = folium.Map(location=[48.8566, 2.3522], zoom_start=12,
                                             tiles='cartodbpositron')
                                 
-                            # Création d'un cluster de marqueurs
+                            # Création d'un cluster de marqueurs optimisé
                             marker_cluster = MarkerCluster(
                                 options={
-                                    'maxClusterRadius': 50,
-                                    'disableClusteringAtZoom': 15
+                                    'maxClusterRadius': 60,
+                                    'disableClusteringAtZoom': 16,
+                                    'spiderfyOnMaxZoom': True,
+                                    'showCoverageOnHover': False
                                 }
                             )
 
-                            # Ajout de la carte de chaleur si activée
+                            # Ajout de la carte de chaleur si activée (plus rapide)
                             if show_heatmap:
-                                heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                                # Utilisation d'un échantillon plus petit pour la heatmap
+                                heat_sample_size = min(2000, len(df_sample))
+                                heat_df = df_sample.sample(n=heat_sample_size, random_state=42)
+                                heat_data = [[row['latitude'], row['longitude']] for _, row in heat_df.iterrows()]
+                                
                                 if heat_data:
                                     HeatMap(
                                         heat_data,
@@ -1336,8 +1352,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                 'Blessé léger': 'yellow'
                             }
 
-                            # Ajout des marqueurs
-                            for _, row in df.iterrows():
+                            # Ajout des marqueurs (optimisé)
+                            for _, row in df_sample.iterrows():
                                 # Taille du marqueur basée sur la gravité
                                 size = {
                                     'Tué': marker_size + 3,
@@ -1345,7 +1361,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                     'Blessé léger': marker_size
                                 }[row['gravite_combinee']]
                                 
-                                # Création du marqueur
+                                # Création du marqueur simplifié
                                 folium.CircleMarker(
                                     location=[row['latitude'], row['longitude']],
                                     radius=size,
@@ -1480,10 +1496,18 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     st.subheader("Carte des accidents")
                     df_month = df_mois[df_mois['mois_nom'] == selected_month]
                     
-                    # Fonction pour créer la carte mensuelle
+                    # Fonction pour créer la carte mensuelle optimisée
+                    @st.cache_data
                     def create_monthly_heatmap(df):
                         import folium
                         from folium.plugins import HeatMap
+                        
+                        # Limitation pour les performances
+                        max_points = 3000
+                        if len(df) > max_points:
+                            df_sample = df.sample(n=max_points, random_state=42)
+                        else:
+                            df_sample = df
                         
                         m = folium.Map(location=[48.8566, 2.3522], zoom_start=13,
                                       tiles='cartodbpositron',
@@ -1492,7 +1516,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                       max_zoom=16)
                         
                         # Création des données pour la heatmap
-                        heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                        heat_data = [[row['latitude'], row['longitude']] for _, row in df_sample.iterrows()]
                         if heat_data:
                             HeatMap(
                                 heat_data,
@@ -1644,10 +1668,18 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     st.subheader(f"Carte des accidents pour l'année {selected_year}")
                     df_year = df_annee[df_annee['annee'] == selected_year]
                     
-                    # Fonction pour créer la carte annuelle
+                    # Fonction pour créer la carte annuelle optimisée
+                    @st.cache_data
                     def create_yearly_heatmap(df):
                         import folium
                         from folium.plugins import HeatMap
+                        
+                        # Limitation pour les performances
+                        max_points = 4000
+                        if len(df) > max_points:
+                            df_sample = df.sample(n=max_points, random_state=42)
+                        else:
+                            df_sample = df
                         
                         m = folium.Map(location=[48.8566, 2.3522], zoom_start=13,
                                       tiles='cartodbpositron',
@@ -1656,7 +1688,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                       max_zoom=16)
                         
                         # Création des données pour la heatmap
-                        heat_data = [[row['latitude'], row['longitude']] for _, row in df.iterrows()]
+                        heat_data = [[row['latitude'], row['longitude']] for _, row in df_sample.iterrows()]
                         if heat_data:
                             HeatMap(
                                 heat_data,
