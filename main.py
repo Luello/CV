@@ -1141,15 +1141,15 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
         
         # Import et exécution de l'application d'accidentologie
         try:
-            # Import de l'application d'accidentologie intégrée
-            from accidentologie_integrated import run_accidentologie_app
+            # Import de l'application d'accidentologie simplifiée
+            from accidentologie_simple import run_simple_accidentologie
             
             # Exécuter l'application d'accidentologie
             st.markdown("---")
             st.markdown("### 🚨 Analyse d'Accidentologie à Paris - Application Interactive")
             
             # Exécution de l'application
-            run_accidentologie_app()
+            run_simple_accidentologie()
             
         except Exception as e:
             st.error(f"Erreur lors du chargement de l'application : {str(e)}")
