@@ -2107,7 +2107,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             model_type = st.selectbox(
                 "Sélectionner le type de modèle",
                 ["Prophet (Série Temporelle)", "XGBoost (Machine Learning)"],
-                key="prediction_model_selector"
+                key="prediction_model_selector_unique"
             )
             
             try:
@@ -2208,11 +2208,12 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         prophet_data = train_data[['date', 'accidents']].copy()
                         prophet_data.columns = ['ds', 'y']
                         
-                        # Ajout des régresseurs aux données d'entraînement
+                        # Ajout des régresseurs aux données d'entraînement avec gestion des NaN
                         regressor_cols = ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']
                         for col in regressor_cols:
                             if col in train_data.columns:
-                                prophet_data[col] = train_data[col]
+                                # Remplacer les NaN par la moyenne de la colonne
+                                prophet_data[col] = train_data[col].fillna(train_data[col].mean())
                         
                         # Configuration du modèle Prophet
                         model = Prophet(
@@ -2246,10 +2247,11 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         future = test_data_2023[['date']].copy()
                         future.columns = ['ds']
                         
-                        # Ajout des régresseurs pour les prédictions
+                        # Ajout des régresseurs pour les prédictions avec gestion des NaN
                         for col in regressor_cols:
                             if col in test_data_2023.columns:
-                                future[col] = test_data_2023[col]
+                                # Remplacer les NaN par la moyenne de la colonne
+                                future[col] = test_data_2023[col].fillna(test_data_2023[col].mean())
                         
                         forecast = model.predict(future)
                         predictions_2023 = forecast['yhat'].values
@@ -2538,7 +2540,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             model_type = st.selectbox(
                 "Sélectionner le type de modèle",
                 ["XGBoost (Machine Learning)"],
-                key="prediction_model_selector"
+                key="prediction_model_selector_unique"
             )
             
             try:
@@ -2901,7 +2903,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             model_type = st.selectbox(
                 "Sélectionner le type de modèle",
                 ["Prophet (Série Temporelle)", "XGBoost (Machine Learning)"],
-                key="prediction_model_selector"
+                key="prediction_model_selector_unique"
             )
             
             if model_type == "Prophet (Série Temporelle)":
