@@ -2126,11 +2126,11 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             # Vérification de la disponibilité des données
                             if train_data.empty:
                                 st.error("Aucune donnée d'entraînement disponible (2017-2021)")
-                                return
+                                st.stop()
                             
                             if test_data_2022.empty and test_data_2023.empty:
                                 st.error("Aucune donnée de test disponible (2022-2023)")
-                                return
+                                st.stop()
                             
                             # Remplissage des valeurs manquantes
                             for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
