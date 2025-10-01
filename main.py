@@ -2251,12 +2251,12 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                 # Graphique de prédiction
                                 fig = go.Figure()
                                 
-                                # Données d'entraînement
+                                # Données d\'entraînement
                                 fig.add_trace(go.Scatter(
                                     x=train_data['date'],
                                     y=train_data['accidents'],
                                     mode='lines',
-                                    name='Données d'entraînement (2017-2021)',
+                                    name='Données d\'entraînement (2017-2021)',
                                     line=dict(color='blue', width=2)
                                 ))
                                 
@@ -2382,7 +2382,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                     x=train_data['date'],
                                     y=train_data['accidents'],
                                     mode='lines',
-                                    name='Données d'entraînement',
+                                    name='Données d\'entraînement',
                                     line=dict(color='blue')
                                 ))
                                 
@@ -2456,7 +2456,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                     x=train_data['date'],
                                     y=train_data['accidents'],
                                     mode='lines',
-                                    name='Données d'entraînement',
+                                    name='Données d\'entraînement',
                                     line=dict(color='blue')
                                 ))
                                 
