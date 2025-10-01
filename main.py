@@ -2078,8 +2078,13 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             
                             # Chargement des données de trafic
                             try:
-                                traffic_df = pd.read_csv('trafic_routier_paris.csv')
+                                traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
                                 traffic_df['date'] = pd.to_datetime(traffic_df['date'])
+                                # Renommage des colonnes pour correspondre au code
+                                traffic_df = traffic_df.rename(columns={
+                                    'q': 'trafic_debit',
+                                    'k': 'trafic_concentration'
+                                })
                             except:
                                 traffic_df = None
                             
@@ -2125,7 +2130,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                     test_data_2022[col] = test_data_2022['date'].dt.month.map(monthly_means)
                                     test_data_2023[col] = test_data_2023['date'].dt.month.map(monthly_means)
                                 else:
-                                    monthly_means[col] = train_data.groupby(train_data['date'].dt.month)[col].mean()
+                                    # Si la colonne n'existe pas, créer des valeurs par défaut
+                                    test_data_2022[col] = 0.0
                                     test_data_2023[col] = 0.0
                             
                             # Entraînement du modèle XGBoost simplifié
