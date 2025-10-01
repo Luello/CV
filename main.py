@@ -2123,6 +2123,15 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             test_data_2022 = daily_data[daily_data['year'] == 2022].copy()
                             test_data_2023 = daily_data[daily_data['year'] == 2023].copy()
                             
+                            # Vérification de la disponibilité des données
+                            if train_data.empty:
+                                st.error("Aucune donnée d'entraînement disponible (2017-2021)")
+                                return
+                            
+                            if test_data_2022.empty and test_data_2023.empty:
+                                st.error("Aucune donnée de test disponible (2022-2023)")
+                                return
+                            
                             # Remplissage des valeurs manquantes
                             for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
                                 if col in train_data.columns:
@@ -2159,24 +2168,36 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             
                             model.fit(X_train, y_train)
                             
-                            # Prédictions
-                            predictions_2022 = model.predict(X_test_2022)
-                            predictions_2023 = model.predict(X_test_2023)
+                            # Prédictions (seulement si les données existent)
+                            predictions_2022 = None
+                            predictions_2023 = None
+                            mae_2022 = None
+                            r2_2022 = None
+                            
+                            if not test_data_2022.empty:
+                                predictions_2022 = model.predict(X_test_2022)
+                            
+                            if not test_data_2023.empty:
+                                predictions_2023 = model.predict(X_test_2023)
                             
                             # Métriques
                             from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
                             import numpy as np
                             
-                            mae_2022 = mean_absolute_error(test_data_2022['accidents'], predictions_2022)
-                            r2_2022 = r2_score(test_data_2022['accidents'], predictions_2022)
+                            if not test_data_2022.empty and predictions_2022 is not None:
+                                mae_2022 = mean_absolute_error(test_data_2022['accidents'], predictions_2022)
+                                r2_2022 = r2_score(test_data_2022['accidents'], predictions_2022)
                             
                             # Affichage des métriques
-                            st.subheader("Performance du modèle sur l'année 2022")
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.metric("MAE", f"{mae_2022:.2f}")
-                            with col2:
-                                st.metric("R²", f"{r2_2022:.3f}")
+                            if mae_2022 is not None and r2_2022 is not None:
+                                st.subheader("Performance du modèle sur l'année 2022")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.metric("MAE", f"{mae_2022:.2f}")
+                                with col2:
+                                    st.metric("R²", f"{r2_2022:.3f}")
+                            else:
+                                st.info("Aucune donnée de validation disponible pour 2022")
                             
                             # Importance des features
                             feature_importance = pd.DataFrame({
@@ -2205,29 +2226,30 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                 line=dict(color='blue')
                             ))
                             
-                            # Données réelles 2022
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2022['date'],
-                                y=test_data_2022['accidents'],
-                                name='Données réelles 2022',
-                                line=dict(color='green')
-                            ))
+                            # Données réelles et prédictions 2022 (si disponibles)
+                            if not test_data_2022.empty and predictions_2022 is not None:
+                                fig.add_trace(go.Scatter(
+                                    x=test_data_2022['date'],
+                                    y=test_data_2022['accidents'],
+                                    name='Données réelles 2022',
+                                    line=dict(color='green')
+                                ))
+                                
+                                fig.add_trace(go.Scatter(
+                                    x=test_data_2022['date'],
+                                    y=predictions_2022,
+                                    name='Prédictions 2022',
+                                    line=dict(color='orange', dash='dash')
+                                ))
                             
-                            # Prédictions 2022
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2022['date'],
-                                y=predictions_2022,
-                                name='Prédictions 2022',
-                                line=dict(color='orange', dash='dash')
-                            ))
-                            
-                            # Prédictions 2023
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2023['date'],
-                                y=predictions_2023,
-                                name='Prédictions 2023',
-                                line=dict(color='red', dash='dash')
-                            ))
+                            # Prédictions 2023 (si disponibles)
+                            if not test_data_2023.empty and predictions_2023 is not None:
+                                fig.add_trace(go.Scatter(
+                                    x=test_data_2023['date'],
+                                    y=predictions_2023,
+                                    name='Prédictions 2023',
+                                    line=dict(color='red', dash='dash')
+                                ))
                             
                             fig.update_layout(
                                 title="Évolution du nombre d'accidents quotidiens et prédictions (XGBoost)",
@@ -2239,14 +2261,17 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             st.plotly_chart(fig, use_container_width=True)
                             
                             # Statistiques des prédictions
-                            st.subheader("Statistiques des prédictions 2023")
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Moyenne prédite", f"{predictions_2023.mean():.1f}")
-                            with col2:
-                                st.metric("Maximum prédit", f"{predictions_2023.max():.1f}")
-                            with col3:
-                                st.metric("Minimum prédit", f"{predictions_2023.min():.1f}")
+                            if predictions_2023 is not None and len(predictions_2023) > 0:
+                                st.subheader("Statistiques des prédictions 2023")
+                                col1, col2, col3 = st.columns(3)
+                                with col1:
+                                    st.metric("Moyenne prédite", f"{predictions_2023.mean():.1f}")
+                                with col2:
+                                    st.metric("Maximum prédit", f"{predictions_2023.max():.1f}")
+                                with col3:
+                                    st.metric("Minimum prédit", f"{predictions_2023.min():.1f}")
+                            else:
+                                st.info("Aucune prédiction disponible pour 2023")
                 
                 except Exception as e:
                     st.error(f"Erreur lors du calcul des prédictions : {str(e)}")
