@@ -2204,9 +2204,15 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         """Entraîne un modèle Prophet sur les données quotidiennes."""
                         from prophet import Prophet
                         
-                        # Préparation des données pour Prophet
+                        # Préparation des données pour Prophet avec régresseurs
                         prophet_data = train_data[['date', 'accidents']].copy()
                         prophet_data.columns = ['ds', 'y']
+                        
+                        # Ajout des régresseurs aux données d'entraînement
+                        regressor_cols = ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']
+                        for col in regressor_cols:
+                            if col in train_data.columns:
+                                prophet_data[col] = train_data[col]
                         
                         # Configuration du modèle Prophet
                         model = Prophet(
@@ -2241,7 +2247,6 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         future.columns = ['ds']
                         
                         # Ajout des régresseurs pour les prédictions
-                        regressor_cols = ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']
                         for col in regressor_cols:
                             if col in test_data_2023.columns:
                                 future[col] = test_data_2023[col]
