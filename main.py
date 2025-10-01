@@ -2517,10 +2517,6 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     except Exception as e:
                         st.error(f"Erreur lors du calcul des prédictions Prophet : {str(e)}")
                         st.info("Note : Les prédictions Prophet nécessitent les données météorologiques. Vérifiez que le fichier 'data_meteo.csv' est présent.")
-                
-                except Exception as e:
-                    st.error(f"Erreur lors du calcul des prédictions : {str(e)}")
-                    st.info("Note : Les prédictions nécessitent les données météorologiques et de trafic. Vérifiez que les fichiers 'data_meteo.csv' et 'trafic_routier_paris.csv' sont présents.")
 
             elif analysis_type == "Statistiques générales":
                 st.header("Statistiques générales")
