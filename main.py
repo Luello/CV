@@ -2106,6 +2106,432 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             # Sélection du modèle avec clé unique
             model_type = st.selectbox(
                 "Sélectionner le type de modèle",
+                ["Prophet (Série Temporelle)", "XGBoost (Machine Learning)"],
+                key="prediction_model_selector"
+            )
+            
+            try:
+                with st.spinner("Calcul des prédictions en cours..."):
+                    # Chargement des données météo
+                    @st.cache_data
+                    def load_weather_data():
+                        try:
+                            weather_df = pd.read_csv('data_meteo.csv')
+                            weather_df['date'] = pd.to_datetime(weather_df['date'])
+                            return weather_df
+                        except Exception as e:
+                            st.error(f"Erreur lors du chargement des données météorologiques : {e}")
+                            return None
+                    
+                    # Fonction pour préparer les features temporelles
+                    def prepare_temporal_features(df):
+                        """Prépare les features temporelles cycliques pour mieux capturer la saisonnalité."""
+                        df = df.copy()
+                        
+                        # Features temporelles basiques
+                        df['month'] = df['date'].dt.month
+                        df['day'] = df['date'].dt.day
+                        df['dayofweek'] = df['date'].dt.dayofweek
+                        
+                        # Features cycliques
+                        df['month_sin'] = np.sin(2 * np.pi * df['month']/12)
+                        df['month_cos'] = np.cos(2 * np.pi * df['month']/12)
+                        df['day_sin'] = np.sin(2 * np.pi * df['day']/31)
+                        df['day_cos'] = np.cos(2 * np.pi * df['day']/31)
+                        df['dayofweek_sin'] = np.sin(2 * np.pi * df['dayofweek']/7)
+                        df['dayofweek_cos'] = np.cos(2 * np.pi * df['dayofweek']/7)
+                        
+                        return df
+                    
+                    # Fonction pour entraîner le modèle XGBoost
+                    def train_xgboost_model(train_data, test_data_2023):
+                        """Entraîne un modèle XGBoost sur les données quotidiennes."""
+                        # Définition des colonnes pour le modèle
+                        feature_columns = [
+                            'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration',
+                            'month_sin', 'month_cos', 'day_sin', 'day_cos', 'dayofweek_sin', 'dayofweek_cos'
+                        ]
+                        
+                        # Préparation des données d'entraînement
+                        train_features = train_data.copy()
+                        test_features_2023 = test_data_2023.copy()
+                        
+                        # Gestion des valeurs manquantes
+                        for col in feature_columns:
+                            if col in train_features.columns:
+                                # Traitement spécial pour la neige
+                                if col == 'snow':
+                                    train_features[col] = train_features[col].fillna(0)
+                                    test_features_2023[col] = test_features_2023[col].fillna(0)
+                                else:
+                                    # Pour les autres colonnes, utiliser la moyenne mensuelle
+                                    monthly_means = train_features.groupby('month')[col].transform('mean')
+                                    train_features[col] = train_features[col].fillna(monthly_means)
+                                    test_features_2023[col] = test_features_2023[col].fillna(monthly_means)
+                        
+                        # Préparation des données d'entraînement
+                        X_train = train_features[feature_columns]
+                        y_train = train_features['accidents']
+                        X_test_2023 = test_features_2023[feature_columns]
+                        
+                        # Configuration et entraînement du modèle XGBoost
+                        model = xgb.XGBRegressor(
+                            n_estimators=200,
+                            learning_rate=0.1,
+                            max_depth=6,
+                            min_child_weight=1,
+                            subsample=0.8,
+                            colsample_bytree=0.8,
+                            random_state=42
+                        )
+                        
+                        # Entraînement du modèle
+                        model.fit(X_train, y_train)
+                        
+                        # Prédictions pour 2023
+                        predictions_2023 = model.predict(X_test_2023)
+                        
+                        # Importance des features
+                        feature_importance = pd.DataFrame({
+                            'feature': feature_columns,
+                            'importance': model.feature_importances_
+                        }).sort_values('importance', ascending=False)
+                        
+                        return model, predictions_2023, feature_importance
+                    
+                    # Fonction pour entraîner le modèle Prophet
+                    def train_prophet_model(train_data, test_data_2023):
+                        """Entraîne un modèle Prophet sur les données quotidiennes."""
+                        from prophet import Prophet
+                        
+                        # Préparation des données pour Prophet
+                        prophet_data = train_data[['date', 'accidents']].copy()
+                        prophet_data.columns = ['ds', 'y']
+                        
+                        # Configuration du modèle Prophet
+                        model = Prophet(
+                            yearly_seasonality=True,
+                            weekly_seasonality=True,
+                            daily_seasonality=False,
+                            seasonality_mode='multiplicative',
+                            changepoint_prior_scale=0.05
+                        )
+                        
+                        # Ajout des régresseurs météo si disponibles
+                        if 'tavg' in train_data.columns:
+                            model.add_regressor('tavg')
+                        if 'prcp' in train_data.columns:
+                            model.add_regressor('prcp')
+                        if 'snow' in train_data.columns:
+                            model.add_regressor('snow')
+                        if 'wspd' in train_data.columns:
+                            model.add_regressor('wspd')
+                        
+                        # Ajout des régresseurs de trafic si disponibles
+                        if 'trafic_debit' in train_data.columns:
+                            model.add_regressor('trafic_debit')
+                        if 'trafic_concentration' in train_data.columns:
+                            model.add_regressor('trafic_concentration')
+                        
+                        # Entraînement du modèle
+                        model.fit(prophet_data)
+                        
+                        # Prédictions pour 2023
+                        future = test_data_2023[['date']].copy()
+                        future.columns = ['ds']
+                        
+                        # Ajout des régresseurs pour les prédictions
+                        regressor_cols = ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']
+                        for col in regressor_cols:
+                            if col in test_data_2023.columns:
+                                future[col] = test_data_2023[col]
+                        
+                        forecast = model.predict(future)
+                        predictions_2023 = forecast['yhat'].values
+                        
+                        return model, predictions_2023, forecast
+                    
+                    weather_df = load_weather_data()
+                    if weather_df is None:
+                        st.error("Impossible de charger les données météo")
+                    else:
+                        # Préparation des données avec le même type datetime64[ns]
+                        weather_df['date'] = pd.to_datetime(weather_df['date'])
+                        df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
+                        
+                        # Chargement des données de trafic
+                        try:
+                            traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
+                            traffic_df['date'] = pd.to_datetime(traffic_df['date'])
+                            # Garder uniquement les colonnes nécessaires
+                            traffic_df = traffic_df[['date', 'q', 'k']]  # q: débit, k: concentration
+                        except Exception as e:
+                            st.error(f"Erreur lors du chargement des données de trafic : {str(e)}")
+                            traffic_df = None
+                        
+                        # Enrichissement et agrégation des données
+                        df_enriched = pd.merge(df, weather_df, on='date', how='left')
+                        if traffic_df is not None:
+                            df_enriched = pd.merge(df_enriched, traffic_df, on='date', how='left')
+                        
+                        daily_data = df_enriched.groupby('date').agg({
+                            'id_accident': 'count',
+                            'tavg': 'first',
+                            'prcp': 'first',
+                            'snow': 'first',
+                            'wspd': 'first',
+                            'q': 'first',  # débit moyen du trafic
+                            'k': 'first'   # concentration moyenne du trafic
+                        }).reset_index()
+                        daily_data.columns = ['date', 'accidents', 'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']
+                        
+                        # Séparation des données d'entraînement (jusqu'à 2022) et de test (2023)
+                        train_data = daily_data[daily_data['date'].dt.year <= 2022].copy()
+                        real_data_2023 = daily_data[daily_data['date'].dt.year == 2023].copy()
+                        
+                        # Création des données de test pour 2023
+                        test_dates_2023 = pd.date_range(start='2023-01-01', end='2023-12-31', freq='D')
+                        test_data_2023 = pd.DataFrame({'date': test_dates_2023})
+                        
+                        # Calcul des moyennes mensuelles pour chaque variable
+                        monthly_means = {}
+                        for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
+                            if col in train_data.columns:
+                                monthly_means[col] = train_data.groupby(train_data['date'].dt.month)[col].mean()
+                                test_data_2023[col] = 0.0
+                        
+                        # Ajout des variables météo et trafic aux données de test 2023
+                        for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
+                            if col in monthly_means:
+                                test_data_2023[col] = test_data_2023['date'].dt.month.map(monthly_means[col])
+                                if col == 'snow':
+                                    test_data_2023.loc[test_data_2023['date'].dt.month.isin([6, 7, 8, 9]), 'snow'] = 0
+                        
+                        # Préparation des données temporelles
+                        train_data = prepare_temporal_features(train_data)
+                        test_data_2023 = prepare_temporal_features(test_data_2023)
+                        if not real_data_2023.empty:
+                            real_data_2023 = prepare_temporal_features(real_data_2023)
+                        
+                        # Entraînement et prédiction selon le modèle sélectionné
+                        if model_type == "Prophet (Série Temporelle)":
+                            prophet_model, predictions_2023, forecast = train_prophet_model(
+                                train_data, test_data_2023
+                            )
+                            model_name = "Prophet"
+                        else:  # XGBoost
+                            xgb_model, predictions_2023, feature_importance = train_xgboost_model(
+                                train_data, test_data_2023
+                            )
+                            model_name = "XGBoost"
+                        
+                        # GRAPHIQUE TEMPOREL EN PREMIER - PRÉDICTIONS 2023 UNIQUEMENT
+                        st.subheader("📈 Prédictions d'Accidents 2023")
+                        
+                        # Création du graphique des prédictions
+                        fig = go.Figure()
+                        
+                        # Données historiques d'entraînement (2017-2022)
+                        fig.add_trace(go.Scatter(
+                            x=train_data['date'],
+                            y=train_data['accidents'],
+                            name='Données historiques (2017-2022)',
+                            line=dict(color='blue', width=1)
+                        ))
+                        
+                        # Données réelles 2023 (vraies données en arrière-plan)
+                        if not real_data_2023.empty:
+                            fig.add_trace(go.Scatter(
+                                x=real_data_2023['date'],
+                                y=real_data_2023['accidents'],
+                                name='Données réelles 2023',
+                                line=dict(color='green', width=3)
+                            ))
+                        
+                        # Prédictions XGBoost pour 2023
+                        fig.add_trace(go.Scatter(
+                            x=test_data_2023['date'],
+                            y=predictions_2023,
+                            name='Prédictions 2023',
+                            line=dict(color='red', dash='dash', width=3)
+                        ))
+                        
+                        # Mise en forme du graphique
+                        fig.update_layout(
+                            title=f"Prédictions d'accidents quotidiens pour 2023 ({model_name})",
+                            xaxis_title="Date",
+                            yaxis_title="Nombre d'accidents",
+                            height=600,
+                            showlegend=True,
+                            shapes=[
+                                # Ligne verticale pour marquer le début de 2023
+                                dict(
+                                    type='line',
+                                    x0='2023-01-01',
+                                    x1='2023-01-01',
+                                    y0=0,
+                                    y1=1,
+                                    yref='paper',
+                                    line=dict(
+                                        color='red',
+                                        dash='dash',
+                                        width=2
+                                    )
+                                )
+                            ],
+                            annotations=[
+                                # Annotation pour la ligne de 2023
+                                dict(
+                                    x='2023-01-01',
+                                    y=1.02,
+                                    yref='paper',
+                                    showarrow=False,
+                                    text='Début 2023',
+                                    font=dict(color='red', size=14)
+                                )
+                            ],
+                            margin=dict(t=50, r=50)
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Calcul des métriques pour 2023 si les vraies données sont disponibles
+                        if not real_data_2023.empty:
+                            # Alignement des données pour le calcul des métriques
+                            real_2023_aligned = real_data_2023.set_index('date')
+                            pred_2023_aligned = pd.DataFrame({
+                                'date': test_data_2023['date'],
+                                'predictions': predictions_2023
+                            }).set_index('date')
+                            
+                            # Intersection des dates
+                            common_dates = real_2023_aligned.index.intersection(pred_2023_aligned.index)
+                            if len(common_dates) > 0:
+                                real_values = real_2023_aligned.loc[common_dates, 'accidents']
+                                pred_values = pred_2023_aligned.loc[common_dates, 'predictions']
+                                
+                                mae_2023 = mean_absolute_error(real_values, pred_values)
+                                mse_2023 = mean_squared_error(real_values, pred_values)
+                                rmse_2023 = np.sqrt(mse_2023)
+                                r2_2023 = r2_score(real_values, pred_values)
+                                
+                                # Affichage des métriques pour 2023
+                                st.subheader("Performance du modèle sur l'année 2023")
+                                col1, col2, col3, col4 = st.columns(4)
+                                with col1:
+                                    st.metric("MAE", f"{mae_2023:.1f}")
+                                with col2:
+                                    st.metric("MSE", f"{mse_2023:.1f}")
+                                with col3:
+                                    st.metric("RMSE", f"{rmse_2023:.1f}")
+                                with col4:
+                                    st.metric("R²", f"{r2_2023:.3f}")
+                        else:
+                            st.info("Les données réelles 2023 ne sont pas disponibles pour le calcul des métriques.")
+                        
+                        # Affichage des informations spécifiques au modèle
+                        if model_type == "Prophet (Série Temporelle)":
+                            st.subheader("📊 Analyse des Composants Prophet")
+                            
+                            # Graphique des composants Prophet
+                            fig_components = prophet_model.plot_components(forecast)
+                            st.pyplot(fig_components)
+                            
+                            st.subheader("Variables utilisées pour la prédiction")
+                            st.write("Le modèle Prophet utilise les variables suivantes :")
+                            
+                            regressor_info = []
+                            if 'tavg' in train_data.columns:
+                                regressor_info.append("🌡️ **Température moyenne** (°C) - Régresseur externe")
+                            if 'prcp' in train_data.columns:
+                                regressor_info.append("🌧️ **Précipitations** (mm) - Régresseur externe")
+                            if 'snow' in train_data.columns:
+                                regressor_info.append("❄️ **Neige** (mm) - Régresseur externe")
+                            if 'wspd' in train_data.columns:
+                                regressor_info.append("💨 **Vitesse du vent** (km/h) - Régresseur externe")
+                            if 'trafic_debit' in train_data.columns:
+                                regressor_info.append("🚗 **Débit du trafic** (véhicules/h) - Régresseur externe")
+                            if 'trafic_concentration' in train_data.columns:
+                                regressor_info.append("🚦 **Concentration du trafic** (véhicules/km) - Régresseur externe")
+                            
+                            regressor_info.append("📅 **Saisonnalité annuelle** - Pattern automatique")
+                            regressor_info.append("📆 **Saisonnalité hebdomadaire** - Pattern automatique")
+                            
+                            for info in regressor_info:
+                                st.write(info)
+                                
+                        else:  # XGBoost
+                            st.subheader("Variables utilisées pour la prédiction")
+                            
+                            # Description des features
+                            feature_descriptions = {
+                                'tavg': 'Température moyenne (°C)',
+                                'prcp': 'Précipitations (mm)',
+                                'snow': 'Neige (mm)',
+                                'wspd': 'Vitesse du vent (km/h)',
+                                'trafic_debit': 'Débit du trafic (véhicules/h)',
+                                'trafic_concentration': 'Concentration du trafic (véhicules/km)',
+                                'month_sin': 'Saisonnalité mensuelle (sinus)',
+                                'month_cos': 'Saisonnalité mensuelle (cosinus)',
+                                'day_sin': 'Saisonnalité journalière (sinus)',
+                                'day_cos': 'Saisonnalité journalière (cosinus)',
+                                'dayofweek_sin': 'Jour de la semaine (sinus)',
+                                'dayofweek_cos': 'Jour de la semaine (cosinus)'
+                            }
+                            
+                            # Création d'un DataFrame avec les descriptions
+                            feature_importance_df = feature_importance.copy()
+                            feature_importance_df['description'] = feature_importance_df['feature'].map(feature_descriptions)
+                            feature_importance_df['importance_percent'] = feature_importance_df['importance'] * 100
+                            
+                            # Affichage dans un tableau
+                            st.write("Liste des variables d'entrée et leur importance relative :")
+                            
+                            # Formatage du tableau
+                            formatted_df = pd.DataFrame({
+                                'Variable': feature_importance_df['description'],
+                                'Importance (%)': feature_importance_df['importance_percent'].round(2)
+                            }).reset_index(drop=True)
+                            
+                            st.dataframe(formatted_df)
+                            
+                            # Création d'un graphique à barres pour l'importance des features
+                            fig_importance = go.Figure()
+                            
+                            fig_importance.add_trace(go.Bar(
+                                x=feature_importance_df['importance_percent'],
+                                y=feature_importance_df['description'],
+                                orientation='h'
+                            ))
+                            
+                            fig_importance.update_layout(
+                                title="Importance relative des variables dans le modèle",
+                                xaxis_title="Importance (%)",
+                                yaxis_title="Variable",
+                                height=400,
+                                margin=dict(t=30, r=10, b=0, l=10)
+                            )
+                            
+                            st.plotly_chart(fig_importance, use_container_width=True)
+            except Exception as e:
+                st.error(f"Une erreur s'est produite : {str(e)}")
+                st.text("Traceback complet :")
+                st.code(traceback.format_exc())
+        else:
+            st.error("Impossible de charger les données d'accidentologie.")
+
+        
+        # Vérification des données
+        if 'df' in locals() and df is not None and not df.empty:
+            description = "Le modèle XGBoost utilise les données historiques d'accidents (2017-2022), combinées avec les données météorologiques "
+            description += "(température, précipitations, neige, vent) et de trafic (débit et concentration) pour prédire le nombre quotidien "
+            description += "d'accidents en 2023. Le modèle apprend les patterns saisonniers et les corrélations entre ces différentes variables "
+            description += "pour générer des prédictions précises."
+            st.write(description)
+            
+            # Sélection du modèle avec clé unique
+            model_type = st.selectbox(
+                "Sélectionner le type de modèle",
                 ["XGBoost (Machine Learning)"],
                 key="prediction_model_selector"
             )
