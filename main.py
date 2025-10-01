@@ -2052,7 +2052,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 # Sélection du modèle
                 model_type = st.selectbox(
                     "Sélectionner le type de modèle",
-                    ["XGBoost (Machine Learning)"]
+                    ["XGBoost (Machine Learning)", "Prophet (Série Temporelle)"]
                 )
                 
                 try:
@@ -2272,6 +2272,246 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                     st.metric("Minimum prédit", f"{predictions_2023.min():.1f}")
                             else:
                                 st.info("Aucune prédiction disponible pour 2023")
+                
+                elif model_type == "Prophet (Série Temporelle)":
+                    st.info("Le modèle Prophet analyse les patterns temporels et saisonniers des accidents pour prédire l'évolution future.")
+                    
+                    try:
+                        with st.spinner("Calcul des prédictions Prophet en cours..."):
+                            # Chargement des données météo
+                            @st.cache_data
+                            def load_weather_data():
+                                try:
+                                    weather_df = pd.read_csv('data_meteo.csv')
+                                    weather_df['date'] = pd.to_datetime(weather_df['date'])
+                                    return weather_df
+                                except Exception as e:
+                                    st.error(f"Erreur lors du chargement des données météo : {str(e)}")
+                                    return None
+                            
+                            weather_df = load_weather_data()
+                            if weather_df is None:
+                                st.error("Impossible de charger les données météo")
+                            else:
+                                # Préparation des données pour Prophet
+                                df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
+                                
+                                # Agrégation quotidienne
+                                daily_data = df.groupby('date').agg({
+                                    'id_accident': 'count'
+                                }).reset_index()
+                                daily_data.rename(columns={'id_accident': 'accidents'}, inplace=True)
+                                
+                                # Enrichissement avec les données météo
+                                df_enriched = pd.merge(daily_data, weather_df, on='date', how='left')
+                                
+                                # Division des données
+                                train_data = df_enriched[df_enriched['date'].dt.year <= 2021].copy()
+                                test_data_2022 = df_enriched[df_enriched['date'].dt.year == 2022].copy()
+                                test_data_2023 = df_enriched[df_enriched['date'].dt.year == 2023].copy()
+                                
+                                # Vérification de la disponibilité des données
+                                if train_data.empty:
+                                    st.error("Aucune donnée d'entraînement disponible (2017-2021)")
+                                    st.stop()
+                                
+                                if test_data_2022.empty and test_data_2023.empty:
+                                    st.error("Aucune donnée de test disponible (2022-2023)")
+                                    st.stop()
+                                
+                                # Préparation des données pour Prophet
+                                def prepare_prophet_data(df):
+                                    df_prophet = df[['date', 'accidents']].copy()
+                                    df_prophet.columns = ['ds', 'y']
+                                    df_prophet = df_prophet.dropna()
+                                    return df_prophet
+                                
+                                train_prophet = prepare_prophet_data(train_data)
+                                
+                                # Configuration et entraînement du modèle Prophet
+                                from prophet import Prophet
+                                
+                                model_prophet = Prophet(
+                                    yearly_seasonality=True,
+                                    weekly_seasonality=True,
+                                    daily_seasonality=False,
+                                    seasonality_mode='multiplicative',
+                                    changepoint_prior_scale=0.05
+                                )
+                                
+                                # Ajout de régresseurs météo si disponibles
+                                if 'tavg' in train_data.columns:
+                                    model_prophet.add_regressor('tavg')
+                                if 'prcp' in train_data.columns:
+                                    model_prophet.add_regressor('prcp')
+                                if 'wspd' in train_data.columns:
+                                    model_prophet.add_regressor('wspd')
+                                
+                                # Préparation des données d'entraînement avec régresseurs
+                                train_with_regressors = train_data[['date', 'accidents', 'tavg', 'prcp', 'wspd']].copy()
+                                train_with_regressors.columns = ['ds', 'y', 'tavg', 'prcp', 'wspd']
+                                train_with_regressors = train_with_regressors.dropna()
+                                
+                                # Entraînement du modèle
+                                model_prophet.fit(train_with_regressors)
+                                
+                                # Prédictions pour 2022 et 2023
+                                predictions_2022 = None
+                                predictions_2023 = None
+                                
+                                if not test_data_2022.empty:
+                                    # Préparation des données de test 2022
+                                    future_2022 = test_data_2022[['date', 'tavg', 'prcp', 'wspd']].copy()
+                                    future_2022.columns = ['ds', 'tavg', 'prcp', 'wspd']
+                                    future_2022 = future_2022.dropna()
+                                    
+                                    if not future_2022.empty:
+                                        forecast_2022 = model_prophet.predict(future_2022)
+                                        predictions_2022 = forecast_2022['yhat'].values
+                                
+                                if not test_data_2023.empty:
+                                    # Préparation des données de test 2023
+                                    future_2023 = test_data_2023[['date', 'tavg', 'prcp', 'wspd']].copy()
+                                    future_2023.columns = ['ds', 'tavg', 'prcp', 'wspd']
+                                    future_2023 = future_2023.dropna()
+                                    
+                                    if not future_2023.empty:
+                                        forecast_2023 = model_prophet.predict(future_2023)
+                                        predictions_2023 = forecast_2023['yhat'].values
+                                
+                                # Métriques pour 2022
+                                mae_2022 = None
+                                r2_2022 = None
+                                
+                                if not test_data_2022.empty and predictions_2022 is not None:
+                                    from sklearn.metrics import mean_absolute_error, r2_score
+                                    test_2022_clean = test_data_2022[test_data_2022['date'].isin(future_2022['ds'])]
+                                    if not test_2022_clean.empty and len(predictions_2022) == len(test_2022_clean):
+                                        mae_2022 = mean_absolute_error(test_2022_clean['accidents'], predictions_2022)
+                                        r2_2022 = r2_score(test_2022_clean['accidents'], predictions_2022)
+                                
+                                # Affichage des métriques
+                                if mae_2022 is not None and r2_2022 is not None:
+                                    st.subheader("Performance du modèle Prophet sur l'année 2022")
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        st.metric("MAE", f"{mae_2022:.2f}")
+                                    with col2:
+                                        st.metric("R²", f"{r2_2022:.3f}")
+                                else:
+                                    st.info("Aucune donnée de validation disponible pour 2022")
+                                
+                                # Graphique des prédictions Prophet
+                                fig = go.Figure()
+                                
+                                # Données historiques
+                                fig.add_trace(go.Scatter(
+                                    x=train_data['date'],
+                                    y=train_data['accidents'],
+                                    name='Données historiques (2017-2021)',
+                                    line=dict(color='blue')
+                                ))
+                                
+                                # Données réelles et prédictions 2022
+                                if not test_data_2022.empty and predictions_2022 is not None:
+                                    test_2022_clean = test_data_2022[test_data_2022['date'].isin(future_2022['ds'])]
+                                    if not test_2022_clean.empty:
+                                        fig.add_trace(go.Scatter(
+                                            x=test_2022_clean['date'],
+                                            y=test_2022_clean['accidents'],
+                                            name='Données réelles 2022',
+                                            line=dict(color='green')
+                                        ))
+                                        
+                                        fig.add_trace(go.Scatter(
+                                            x=test_2022_clean['date'],
+                                            y=predictions_2022,
+                                            name='Prédictions Prophet 2022',
+                                            line=dict(color='orange', dash='dash')
+                                        ))
+                                
+                                # Prédictions 2023
+                                if not test_data_2023.empty and predictions_2023 is not None:
+                                    test_2023_clean = test_data_2023[test_data_2023['date'].isin(future_2023['ds'])]
+                                    if not test_2023_clean.empty:
+                                        fig.add_trace(go.Scatter(
+                                            x=test_2023_clean['date'],
+                                            y=predictions_2023,
+                                            name='Prédictions Prophet 2023',
+                                            line=dict(color='red', dash='dash')
+                                        ))
+                                
+                                fig.update_layout(
+                                    title="Évolution du nombre d'accidents quotidiens et prédictions (Prophet)",
+                                    xaxis_title="Date",
+                                    yaxis_title="Nombre d'accidents",
+                                    height=500
+                                )
+                                
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Statistiques des prédictions
+                                if predictions_2023 is not None and len(predictions_2023) > 0:
+                                    st.subheader("Statistiques des prédictions Prophet 2023")
+                                    col1, col2, col3 = st.columns(3)
+                                    with col1:
+                                        st.metric("Moyenne prédite", f"{predictions_2023.mean():.1f}")
+                                    with col2:
+                                        st.metric("Maximum prédit", f"{predictions_2023.max():.1f}")
+                                    with col3:
+                                        st.metric("Minimum prédit", f"{predictions_2023.min():.1f}")
+                                else:
+                                    st.info("Aucune prédiction disponible pour 2023")
+                                
+                                # Composantes du modèle Prophet
+                                st.subheader("Composantes du modèle Prophet")
+                                
+                                # Création d'un dataframe pour l'analyse des composantes
+                                if not test_data_2023.empty and predictions_2023 is not None:
+                                    future_2023_clean = future_2023.copy()
+                                    forecast_2023_clean = model_prophet.predict(future_2023_clean)
+                                    
+                                    # Graphique des composantes
+                                    fig_components = go.Figure()
+                                    
+                                    # Tendance
+                                    fig_components.add_trace(go.Scatter(
+                                        x=forecast_2023_clean['ds'],
+                                        y=forecast_2023_clean['trend'],
+                                        name='Tendance',
+                                        line=dict(color='blue')
+                                    ))
+                                    
+                                    # Saisonnalité hebdomadaire
+                                    if 'weekly' in forecast_2023_clean.columns:
+                                        fig_components.add_trace(go.Scatter(
+                                            x=forecast_2023_clean['ds'],
+                                            y=forecast_2023_clean['weekly'],
+                                            name='Saisonnalité hebdomadaire',
+                                            line=dict(color='green')
+                                        ))
+                                    
+                                    # Saisonnalité annuelle
+                                    if 'yearly' in forecast_2023_clean.columns:
+                                        fig_components.add_trace(go.Scatter(
+                                            x=forecast_2023_clean['ds'],
+                                            y=forecast_2023_clean['yearly'],
+                                            name='Saisonnalité annuelle',
+                                            line=dict(color='red')
+                                        ))
+                                    
+                                    fig_components.update_layout(
+                                        title="Composantes du modèle Prophet",
+                                        xaxis_title="Date",
+                                        yaxis_title="Valeur",
+                                        height=400
+                                    )
+                                    
+                                    st.plotly_chart(fig_components, use_container_width=True)
+                    
+                    except Exception as e:
+                        st.error(f"Erreur lors du calcul des prédictions Prophet : {str(e)}")
+                        st.info("Note : Les prédictions Prophet nécessitent les données météorologiques. Vérifiez que le fichier 'data_meteo.csv' est présent.")
                 
                 except Exception as e:
                     st.error(f"Erreur lors du calcul des prédictions : {str(e)}")
