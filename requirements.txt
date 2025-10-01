@@ -111,5 +111,7 @@ watchdog==5.0.3
 wcwidth==0.2.13
 wrapt==1.16.0
 umap-learn==0.5.5
-folium==0.15.1
+folium
+xgboost
+scikit-learn==0.15.1
 
