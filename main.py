@@ -174,7 +174,7 @@ page = st.sidebar.radio(
 # =========================
 def safe_image(path: str, **kw):
     p = Path(path)
-    kw.setdefault("use_column_width", True)
+    kw.setdefault("use_container_width", True)
     if p.exists():
         st.image(str(p), **kw)
     else:
@@ -634,7 +634,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         st.success("✅ Chargement complété.")
     
     # Afficher le graphique
-    st.plotly_chart(fig, use_column_width=True)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown("""
         ---
         
@@ -2056,138 +2056,163 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 )
                 
                 if model_type == "XGBoost (Machine Learning)":
-                    try:
-                        with st.spinner("Calcul des prédictions en cours..."):
-                            # Chargement des données météo
-                            @st.cache_data
-                            def load_weather_data():
-                                try:
-                                    weather_df = pd.read_csv('data_meteo.csv')
-                                    weather_df['date'] = pd.to_datetime(weather_df['date'])
-                                    return weather_df
-                                except Exception as e:
-                                    st.error(f"Erreur lors du chargement des données météo : {str(e)}")
-                                    return None
-                            
-                            weather_df = load_weather_data()
-                            if weather_df is None:
-                                st.error("Impossible de charger les données météo")
+                    # Cache pour les données météo
+                    @st.cache_data(ttl=3600)  # Cache pour 1 heure
+                    def load_weather_data():
+                        try:
+                            weather_df = pd.read_csv('data_meteo.csv')
+                            weather_df['date'] = pd.to_datetime(weather_df['date'])
+                            return weather_df
+                        except Exception as e:
+                            st.error(f"Erreur lors du chargement des données météo : {str(e)}")
+                            return None
+                    
+                    # Cache pour les données de trafic
+                    @st.cache_data(ttl=3600)  # Cache pour 1 heure
+                    def load_traffic_data():
+                        try:
+                            traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
+                            traffic_df['date'] = pd.to_datetime(traffic_df['date'])
+                            traffic_df = traffic_df.rename(columns={
+                                'q': 'trafic_debit',
+                                'k': 'trafic_concentration'
+                            })
+                            return traffic_df
+                        except:
+                            return None
+                    
+                    # Cache pour la préparation des données
+                    @st.cache_data(ttl=1800)  # Cache pour 30 minutes
+                    def prepare_xgboost_data(df, weather_df, traffic_df):
+                        # Préparation des données
+                        df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
+                        
+                        # Enrichissement des données
+                        df_enriched = pd.merge(df, weather_df, on='date', how='left')
+                        if traffic_df is not None:
+                            df_enriched = pd.merge(df_enriched, traffic_df, on='date', how='left')
+                        
+                        # Agrégation quotidienne
+                        daily_data = df_enriched.groupby('date').agg({
+                            'id_accident': 'count',
+                            'tavg': 'mean',
+                            'prcp': 'mean', 
+                            'snow': 'mean',
+                            'wspd': 'mean',
+                            'trafic_debit': 'mean',
+                            'trafic_concentration': 'mean'
+                        }).reset_index()
+                        daily_data.rename(columns={'id_accident': 'accidents'}, inplace=True)
+                        
+                        # Préparation des features temporelles
+                        def prepare_temporal_features(df):
+                            df = df.copy()
+                            df['year'] = df['date'].dt.year
+                            df['month'] = df['date'].dt.month
+                            df['day'] = df['date'].dt.day
+                            df['dayofweek'] = df['date'].dt.dayofweek
+                            df['quarter'] = df['date'].dt.quarter
+                            df['is_weekend'] = (df['dayofweek'] >= 5).astype(int)
+                            return df
+                        
+                        daily_data = prepare_temporal_features(daily_data)
+                        
+                        # Division des données
+                        train_data = daily_data[daily_data['year'] <= 2021].copy()
+                        test_data_2022 = daily_data[daily_data['year'] == 2022].copy()
+                        test_data_2023 = daily_data[daily_data['year'] == 2023].copy()
+                        
+                        # Remplissage des valeurs manquantes
+                        for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
+                            if col in train_data.columns:
+                                monthly_means = train_data.groupby(train_data['date'].dt.month)[col].mean()
+                                test_data_2022[col] = test_data_2022['date'].dt.month.map(monthly_means)
+                                test_data_2023[col] = test_data_2023['date'].dt.month.map(monthly_means)
                             else:
-                                # Préparation des données
-                                weather_df['date'] = pd.to_datetime(weather_df['date'])
-                                df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
+                                test_data_2022[col] = 0.0
+                                test_data_2023[col] = 0.0
+                        
+                        return train_data, test_data_2022, test_data_2023
+                    
+                    # Cache pour l'entraînement du modèle XGBoost
+                    @st.cache_data(ttl=1800)  # Cache pour 30 minutes
+                    def train_xgboost_model(train_data, test_data_2022, test_data_2023):
+                        feature_columns = [
+                            'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration',
+                            'year', 'month', 'day', 'dayofweek', 'quarter', 'is_weekend'
+                        ]
+                        
+                        # Filtrage des colonnes existantes
+                        available_features = [col for col in feature_columns if col in train_data.columns]
+                        
+                        X_train = train_data[available_features].fillna(0)
+                        y_train = train_data['accidents']
+                        X_test_2022 = test_data_2022[available_features].fillna(0)
+                        X_test_2023 = test_data_2023[available_features].fillna(0)
+                        
+                        # Modèle XGBoost
+                        import xgboost as xgb
+                        model = xgb.XGBRegressor(
+                            n_estimators=100,
+                            learning_rate=0.1,
+                            max_depth=6,
+                            random_state=42
+                        )
+                        
+                        model.fit(X_train, y_train)
+                        
+                        # Prédictions
+                        predictions_2022 = None
+                        predictions_2023 = None
+                        
+                        if not test_data_2022.empty:
+                            predictions_2022 = model.predict(X_test_2022)
+                        
+                        if not test_data_2023.empty:
+                            predictions_2023 = model.predict(X_test_2023)
+                        
+                        # Métriques
+                        from sklearn.metrics import mean_absolute_error, r2_score
+                        mae_2022 = None
+                        r2_2022 = None
+                        
+                        if not test_data_2022.empty and predictions_2022 is not None:
+                            mae_2022 = mean_absolute_error(test_data_2022['accidents'], predictions_2022)
+                            r2_2022 = r2_score(test_data_2022['accidents'], predictions_2022)
+                        
+                        # Importance des features
+                        feature_importance = pd.DataFrame({
+                            'feature': available_features,
+                            'importance': model.feature_importances_
+                        }).sort_values('importance', ascending=False)
+                        
+                        return model, predictions_2022, predictions_2023, mae_2022, r2_2022, feature_importance, available_features
+                    
+                    try:
+                        # Chargement des données avec cache
+                        with st.spinner("Chargement des données..."):
+                            weather_df = load_weather_data()
+                            traffic_df = load_traffic_data()
+                        
+                        if weather_df is None:
+                            st.error("Impossible de charger les données météo")
+                        else:
+                            # Préparation des données avec cache
+                            with st.spinner("Préparation des données..."):
+                                train_data, test_data_2022, test_data_2023 = prepare_xgboost_data(df, weather_df, traffic_df)
                             
-                                # Chargement des données de trafic
-                                try:
-                                    traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
-                                    traffic_df['date'] = pd.to_datetime(traffic_df['date'])
-                                    # Renommage des colonnes pour correspondre au code
-                                    traffic_df = traffic_df.rename(columns={
-                                        'q': 'trafic_debit',
-                                        'k': 'trafic_concentration'
-                                    })
-                                except:
-                                    traffic_df = None
-                                
-                                # Enrichissement des données
-                                df_enriched = pd.merge(df, weather_df, on='date', how='left')
-                                if traffic_df is not None:
-                                    df_enriched = pd.merge(df_enriched, traffic_df, on='date', how='left')
+                            # Vérification de la disponibilité des données
+                            if train_data.empty:
+                                st.error("Aucune donnée d'entraînement disponible (2017-2021)")
+                                st.stop()
                             
-                                # Agrégation quotidienne
-                                daily_data = df_enriched.groupby('date').agg({
-                                    'id_accident': 'count',
-                                    'tavg': 'mean',
-                                    'prcp': 'mean', 
-                                    'snow': 'mean',
-                                    'wspd': 'mean',
-                                    'trafic_debit': 'mean',
-                                    'trafic_concentration': 'mean'
-                                }).reset_index()
-                                daily_data.rename(columns={'id_accident': 'accidents'}, inplace=True)
+                            if test_data_2022.empty and test_data_2023.empty:
+                                st.error("Aucune donnée de test disponible (2022-2023)")
+                                st.stop()
                             
-                                # Préparation des features temporelles
-                                def prepare_temporal_features(df):
-                                    df = df.copy()
-                                    df['year'] = df['date'].dt.year
-                                    df['month'] = df['date'].dt.month
-                                    df['day'] = df['date'].dt.day
-                                    df['dayofweek'] = df['date'].dt.dayofweek
-                                    df['quarter'] = df['date'].dt.quarter
-                                    df['is_weekend'] = (df['dayofweek'] >= 5).astype(int)
-                                    return df
-                                
-                                daily_data = prepare_temporal_features(daily_data)
-                            
-                                # Division des données
-                                train_data = daily_data[daily_data['year'] <= 2021].copy()
-                                test_data_2022 = daily_data[daily_data['year'] == 2022].copy()
-                                test_data_2023 = daily_data[daily_data['year'] == 2023].copy()
-                                
-                                # Vérification de la disponibilité des données
-                                if train_data.empty:
-                                    st.error("Aucune donnée d'entraînement disponible (2017-2021)")
-                                    st.stop()
-                                
-                                if test_data_2022.empty and test_data_2023.empty:
-                                    st.error("Aucune donnée de test disponible (2022-2023)")
-                                    st.stop()
-                            
-                                # Remplissage des valeurs manquantes
-                                for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
-                                    if col in train_data.columns:
-                                        monthly_means = train_data.groupby(train_data['date'].dt.month)[col].mean()
-                                        test_data_2022[col] = test_data_2022['date'].dt.month.map(monthly_means)
-                                        test_data_2023[col] = test_data_2023['date'].dt.month.map(monthly_means)
-                                    else:
-                                        # Si la colonne n'existe pas, créer des valeurs par défaut
-                                        test_data_2022[col] = 0.0
-                                        test_data_2023[col] = 0.0
-                            
-                                # Entraînement du modèle XGBoost simplifié
-                                feature_columns = [
-                                    'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration',
-                                    'year', 'month', 'day', 'dayofweek', 'quarter', 'is_weekend'
-                                ]
-                                
-                                # Filtrage des colonnes existantes
-                                available_features = [col for col in feature_columns if col in train_data.columns]
-                                
-                                X_train = train_data[available_features].fillna(0)
-                                y_train = train_data['accidents']
-                                X_test_2022 = test_data_2022[available_features].fillna(0)
-                                X_test_2023 = test_data_2023[available_features].fillna(0)
-                                
-                                # Modèle XGBoost simplifié
-                                import xgboost as xgb
-                                model = xgb.XGBRegressor(
-                                    n_estimators=100,
-                                    learning_rate=0.1,
-                                    max_depth=6,
-                                    random_state=42
-                                )
-                                
-                                model.fit(X_train, y_train)
-                            
-                                # Prédictions (seulement si les données existent)
-                                predictions_2022 = None
-                                predictions_2023 = None
-                                mae_2022 = None
-                                r2_2022 = None
-                                
-                                if not test_data_2022.empty:
-                                    predictions_2022 = model.predict(X_test_2022)
-                                
-                                if not test_data_2023.empty:
-                                    predictions_2023 = model.predict(X_test_2023)
-                                
-                                # Métriques
-                                from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-                                import numpy as np
-                                
-                                if not test_data_2022.empty and predictions_2022 is not None:
-                                    mae_2022 = mean_absolute_error(test_data_2022['accidents'], predictions_2022)
-                                    r2_2022 = r2_score(test_data_2022['accidents'], predictions_2022)
+                            # Entraînement du modèle avec cache
+                            with st.spinner("Entraînement du modèle XGBoost..."):
+                                model, predictions_2022, predictions_2023, mae_2022, r2_2022, feature_importance, available_features = train_xgboost_model(train_data, test_data_2022, test_data_2023)
                             
                                 # Affichage des métriques
                                 if mae_2022 is not None and r2_2022 is not None:
@@ -2281,18 +2306,132 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 elif model_type == "Prophet (Série Temporelle)":
                     st.info("Le modèle Prophet analyse les patterns temporels et saisonniers des accidents pour prédire l'évolution future.")
                     
+                    # Cache pour les données météo (réutilise la même fonction)
+                    @st.cache_data(ttl=3600)  # Cache pour 1 heure
+                    def load_weather_data():
+                        try:
+                            weather_df = pd.read_csv('data_meteo.csv')
+                            weather_df['date'] = pd.to_datetime(weather_df['date'])
+                            return weather_df
+                        except Exception as e:
+                            st.error(f"Erreur lors du chargement des données météo : {str(e)}")
+                            return None
+                    
+                    # Cache pour la préparation des données Prophet
+                    @st.cache_data(ttl=1800)  # Cache pour 30 minutes
+                    def prepare_prophet_data(df, weather_df):
+                        # Préparation des données pour Prophet
+                        df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
+                        
+                        # Agrégation quotidienne
+                        daily_data = df.groupby('date').agg({
+                            'id_accident': 'count'
+                        }).reset_index()
+                        daily_data.rename(columns={'id_accident': 'accidents'}, inplace=True)
+                        
+                        # Enrichissement avec les données météo
+                        df_enriched = pd.merge(daily_data, weather_df, on='date', how='left')
+                        
+                        # Division des données
+                        train_data = df_enriched[df_enriched['date'].dt.year <= 2021].copy()
+                        test_data_2022 = df_enriched[df_enriched['date'].dt.year == 2022].copy()
+                        test_data_2023 = df_enriched[df_enriched['date'].dt.year == 2023].copy()
+                        
+                        return train_data, test_data_2022, test_data_2023
+                    
+                    # Cache pour l'entraînement du modèle Prophet
+                    @st.cache_data(ttl=1800)  # Cache pour 30 minutes
+                    def train_prophet_model(train_data, test_data_2022, test_data_2023):
+                        from prophet import Prophet
+                        
+                        # Configuration du modèle Prophet
+                        model_prophet = Prophet(
+                            yearly_seasonality=True,
+                            weekly_seasonality=True,
+                            daily_seasonality=False,
+                            seasonality_mode='multiplicative',
+                            changepoint_prior_scale=0.05
+                        )
+                        
+                        # Ajout de régresseurs météo si disponibles
+                        if 'tavg' in train_data.columns:
+                            model_prophet.add_regressor('tavg')
+                        if 'prcp' in train_data.columns:
+                            model_prophet.add_regressor('prcp')
+                        if 'wspd' in train_data.columns:
+                            model_prophet.add_regressor('wspd')
+                        
+                        # Préparation des données d'entraînement avec régresseurs
+                        train_with_regressors = train_data[['date', 'accidents', 'tavg', 'prcp', 'wspd']].copy()
+                        train_with_regressors.columns = ['ds', 'y', 'tavg', 'prcp', 'wspd']
+                        train_with_regressors = train_with_regressors.dropna()
+                        
+                        # Entraînement du modèle
+                        model_prophet.fit(train_with_regressors)
+                        
+                        # Prédictions pour 2022 et 2023
+                        predictions_2022 = None
+                        predictions_2023 = None
+                        future_2022 = None
+                        future_2023 = None
+                        
+                        if not test_data_2022.empty:
+                            # Préparation des données de test 2022
+                            future_2022 = test_data_2022[['date', 'tavg', 'prcp', 'wspd']].copy()
+                            future_2022.columns = ['ds', 'tavg', 'prcp', 'wspd']
+                            future_2022 = future_2022.dropna()
+                            
+                            if not future_2022.empty:
+                                forecast_2022 = model_prophet.predict(future_2022)
+                                predictions_2022 = forecast_2022['yhat'].values
+                        
+                        if not test_data_2023.empty:
+                            # Préparation des données de test 2023
+                            future_2023 = test_data_2023[['date', 'tavg', 'prcp', 'wspd']].copy()
+                            future_2023.columns = ['ds', 'tavg', 'prcp', 'wspd']
+                            future_2023 = future_2023.dropna()
+                            
+                            if not future_2023.empty:
+                                forecast_2023 = model_prophet.predict(future_2023)
+                                predictions_2023 = forecast_2023['yhat'].values
+                        
+                        # Métriques pour 2022
+                        mae_2022 = None
+                        r2_2022 = None
+                        
+                        if not test_data_2022.empty and predictions_2022 is not None and future_2022 is not None:
+                            from sklearn.metrics import mean_absolute_error, r2_score
+                            test_2022_clean = test_data_2022[test_data_2022['date'].isin(future_2022['ds'])]
+                            if not test_2022_clean.empty and len(predictions_2022) == len(test_2022_clean):
+                                mae_2022 = mean_absolute_error(test_2022_clean['accidents'], predictions_2022)
+                                r2_2022 = r2_score(test_2022_clean['accidents'], predictions_2022)
+                        
+                        return model_prophet, predictions_2022, predictions_2023, mae_2022, r2_2022, future_2022, future_2023
+                    
                     try:
-                        with st.spinner("Calcul des prédictions Prophet en cours..."):
-                            # Chargement des données météo
-                            @st.cache_data
-                            def load_weather_data():
-                                try:
-                                    weather_df = pd.read_csv('data_meteo.csv')
-                                    weather_df['date'] = pd.to_datetime(weather_df['date'])
-                                    return weather_df
-                                except Exception as e:
-                                    st.error(f"Erreur lors du chargement des données météo : {str(e)}")
-                                    return None
+                        # Chargement des données avec cache
+                        with st.spinner("Chargement des données..."):
+                            weather_df = load_weather_data()
+                        
+                        if weather_df is None:
+                            st.error("Impossible de charger les données météo")
+                        else:
+                            # Préparation des données avec cache
+                            with st.spinner("Préparation des données Prophet..."):
+                                train_data, test_data_2022, test_data_2023 = prepare_prophet_data(df, weather_df)
+                            
+                            # Vérification de la disponibilité des données
+                            if train_data.empty:
+                                st.error("Aucune donnée d'entraînement disponible (2017-2021)")
+                                st.stop()
+                            
+                            if test_data_2022.empty and test_data_2023.empty:
+                                st.error("Aucune donnée de test disponible (2022-2023)")
+                                st.stop()
+                            
+                            # Entraînement du modèle avec cache
+                            with st.spinner("Entraînement du modèle Prophet..."):
+                                model_prophet, predictions_2022, predictions_2023, mae_2022, r2_2022, future_2022, future_2023 = train_prophet_model(train_data, test_data_2022, test_data_2023)
                             
                             weather_df = load_weather_data()
                             if weather_df is None:
