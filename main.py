@@ -2138,85 +2138,113 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 # Préparation des données
                 ts_clean = ts_data.dropna()
+                
+                # Vérification et conversion des types de données
+                st.write(f"🔍 **Debug: Type de données avant conversion: {ts_clean['accidents'].dtype}**")
+                st.write(f"🔍 **Debug: Premières valeurs: {ts_clean['accidents'].head().tolist()}**")
+                
+                # Conversion en numérique
+                ts_clean['accidents'] = pd.to_numeric(ts_clean['accidents'], errors='coerce')
+                ts_clean = ts_clean.dropna()
+                
+                st.write(f"✅ **Debug: Type de données après conversion: {ts_clean['accidents'].dtype}**")
+                st.write(f"✅ **Debug: Premières valeurs: {ts_clean['accidents'].head().tolist()}**")
+                
                 future_dates = pd.date_range(start='2023-01-01', periods=12, freq='MS')
                 
-                # Entraînement du modèle SARIMA
-                st.subheader("📊 Entraînement du modèle SARIMA")
-                with st.spinner("Entraînement du modèle en cours..."):
-                    model = SARIMAX(ts_clean['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
-                    fitted_model = model.fit(disp=False)
-                    forecast = fitted_model.get_forecast(steps=periods)
-                    predictions = forecast.predicted_mean.values
+                # Vérification des données avant entraînement
+                if len(ts_clean) < 24:
+                    st.error(f"❌ Pas assez de données pour l'entraînement SARIMA. Nécessaire: 24 mois, Disponible: {len(ts_clean)} mois")
+                elif ts_clean['accidents'].isna().any():
+                    st.error("❌ Données manquantes détectées après conversion")
+                else:
+                    # Entraînement du modèle SARIMA
+                    st.subheader("📊 Entraînement du modèle SARIMA")
+                    with st.spinner("Entraînement du modèle en cours..."):
+                        try:
+                            model = SARIMAX(ts_clean['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
+                            fitted_model = model.fit(disp=False)
+                            forecast = fitted_model.get_forecast(steps=periods)
+                            predictions = forecast.predicted_mean.values
+                        except Exception as e:
+                            st.error(f"❌ Erreur lors de l'entraînement SARIMA: {str(e)}")
+                            st.write(f"🔍 **Debug: Données utilisées pour l'entraînement:**")
+                            st.write(f"- Nombre de points: {len(ts_clean)}")
+                            st.write(f"- Type: {ts_clean['accidents'].dtype}")
+                            st.write(f"- Min: {ts_clean['accidents'].min()}")
+                            st.write(f"- Max: {ts_clean['accidents'].max()}")
+                            st.write(f"- Premières valeurs: {ts_clean['accidents'].head().tolist()}")
+                            raise e
                 
-                st.success("✅ Modèle SARIMA entraîné avec succès")
-                
-                # Création du graphique
-                st.subheader("📈 Prédictions SARIMA 2023")
-                
-                import plotly.graph_objects as go
-                
-                fig = go.Figure()
-                
-                # Données historiques
-                hist_df = ts_clean.reset_index()
-                fig.add_trace(go.Scatter(
-                    x=hist_df['date'],
-                    y=hist_df['accidents'],
-                    mode='lines+markers',
-                    name='Données historiques',
-                    line=dict(color='blue', width=2),
-                    marker=dict(size=4)
-                ))
-                
-                # Prédictions 2023
-                pred_df = pd.DataFrame({
-                    'date': future_dates,
-                    'accidents': predictions
-                })
-                fig.add_trace(go.Scatter(
-                    x=pred_df['date'],
-                    y=pred_df['accidents'],
-                    mode='lines+markers',
-                    name='Prédictions 2023',
-                    line=dict(color='red', width=3, dash='dash'),
-                    marker=dict(size=6)
-                ))
-                
-                # Configuration du graphique
-                fig.update_layout(
-                    title="Prédictions SARIMA - Accidents à Paris 2023",
-                    xaxis_title="Date",
-                    yaxis_title="Nombre d'accidents",
-                    height=600,
-                    hovermode='x unified',
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
+                    st.success("✅ Modèle SARIMA entraîné avec succès")
+                    
+                    # Création du graphique
+                    st.subheader("📈 Prédictions SARIMA 2023")
+                    
+                    import plotly.graph_objects as go
+                    
+                    fig = go.Figure()
+                    
+                    # Données historiques
+                    hist_df = ts_clean.reset_index()
+                    fig.add_trace(go.Scatter(
+                        x=hist_df['date'],
+                        y=hist_df['accidents'],
+                        mode='lines+markers',
+                        name='Données historiques',
+                        line=dict(color='blue', width=2),
+                        marker=dict(size=4)
+                    ))
+                    
+                    # Prédictions 2023
+                    pred_df = pd.DataFrame({
+                        'date': future_dates,
+                        'accidents': predictions
+                    })
+                    fig.add_trace(go.Scatter(
+                        x=pred_df['date'],
+                        y=pred_df['accidents'],
+                        mode='lines+markers',
+                        name='Prédictions 2023',
+                        line=dict(color='red', width=3, dash='dash'),
+                        marker=dict(size=6)
+                    ))
+                    
+                    # Configuration du graphique
+                    fig.update_layout(
+                        title="Prédictions SARIMA - Accidents à Paris 2023",
+                        xaxis_title="Date",
+                        yaxis_title="Nombre d'accidents",
+                        height=600,
+                        hovermode='x unified',
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        )
                     )
-                )
-                
-                # Ligne verticale pour 2023
-                fig.add_vline(
-                    x='2023-01-01',
-                    line_dash="dot",
-                    line_color="gray",
-                    annotation_text="Début 2023",
-                    annotation_position="top"
-                )
-                
-                # Affichage du graphique
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Tableau des prédictions
-                st.subheader("📋 Prédictions mensuelles 2023")
-                pred_table = pd.DataFrame({
-                    'Mois': [d.strftime('%Y-%m') for d in future_dates],
-                    'Prédictions': predictions.round(1)
-                })
-                st.dataframe(pred_table, use_container_width=True)
+                    
+                    # Ligne verticale pour 2023
+                    fig.add_vline(
+                        x='2023-01-01',
+                        line_dash="dot",
+                        line_color="gray",
+                        annotation_text="Début 2023",
+                        annotation_position="top"
+                    )
+                    
+                    # Affichage du graphique
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Tableau des prédictions
+                    st.subheader("📋 Prédictions mensuelles 2023")
+                    pred_table = pd.DataFrame({
+                        'Mois': [d.strftime('%Y-%m') for d in future_dates],
+                        'Prédictions': predictions.round(1)
+                    })
+                    st.dataframe(pred_table, use_container_width=True)
                 
             except Exception as e:
                 st.error(f"Erreur lors de l'entraînement du modèle : {str(e)}")
