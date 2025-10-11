@@ -209,7 +209,7 @@ if page == "🏠 Accueil":
 
     with colL:
         st.markdown('<div class="photo">', unsafe_allow_html=True)
-        safe_image("photo.jpg")
+        safe_image("photo.jpg", use_container_width=False)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with colR:
