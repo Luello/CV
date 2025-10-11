@@ -174,8 +174,9 @@ page = st.sidebar.radio(
 # =========================
 def safe_image(path: str, **kw):
     p = Path(path)
-    kw.setdefault("use_container_width", True)
     if p.exists():
+        # Supprimer use_container_width si présent car pas supporté par st.image
+        kw.pop("use_container_width", None)
         st.image(str(p), **kw)
     else:
         st.info(f"📁 Image introuvable : `{p.name}` — dépose le fichier à la racine.")
@@ -2144,8 +2145,6 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 import warnings
                 warnings.filterwarnings('ignore')
                 
-                st.write("🔍 Débogage: Import des librairies réussi")
-                
                 # Paramètres SARIMA
                 p, d, q = 1, 1, 1
                 P, D, Q, s = 1, 1, 1, 12
@@ -2154,9 +2153,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 # Préparation des données
                 ts_clean = ts_data.dropna()
                 last_date = ts_clean.index[-1]
-                future_dates = pd.date_range(start=last_date, periods=periods+1, freq='MS')[1:]
-                
-                st.write("🔍 Débogage: Préparation des données terminée")
+                # Prédictions uniquement pour 2023 (12 mois)
+                future_dates = pd.date_range(start='2023-01-01', periods=12, freq='MS')
                 
                 # Modèle 1: SARIMA standard
                 st.subheader("📊 Modèle 1: SARIMA sans données météo")
@@ -2224,27 +2222,29 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 # Graphique comparatif
                 st.subheader("📊 Comparaison des prédictions 2023")
-                st.write("🔍 Débogage: Début de la création du graphique")
                 
-                # Données historiques
+                # Données historiques (jusqu'à fin 2022 pour l'entraînement)
                 hist_df = ts_clean.reset_index()
                 hist_df = hist_df[hist_df['date'] < '2023-01-01']
                 
-                # Données réelles 2023
+                # Données réelles 2023 (pour comparaison)
                 real_2023_df = ts_clean.reset_index()
                 real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
                 
-                st.write(f"🔍 Débogage: hist_df shape: {hist_df.shape}")
-                st.write(f"🔍 Débogage: real_2023_df shape: {real_2023_df.shape}")
+                # Données historiques complètes (incluant 2023 pour l'affichage)
+                hist_full_df = ts_clean.reset_index()
+                hist_full_df = hist_full_df[hist_full_df['date'] <= '2023-12-31']
                 
-                # Création du graphique
-                if len(hist_df) > 0:
+                
+                # Création du graphique avec données complètes jusqu'à fin 2023
+                if len(hist_full_df) > 0:
                     fig = px.line(
-                        hist_df,
+                        hist_full_df,
                         x='date',
                         y='accidents',
                         title="Comparaison des prédictions SARIMA 2023",
-                        labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'}
+                        labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'},
+                        color_discrete_map={'accidents': 'blue'}
                     )
                 else:
                     st.error("Pas de données historiques disponibles")
@@ -2268,10 +2268,6 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 for i, (pred, name) in enumerate(zip(predictions, names)):
                     if pred is not None and fig is not None:
-                        # Vérification des types
-                        st.write(f"🔍 Débogage: Prédiction {i+1} - type: {type(pred)}, shape: {pred.shape if hasattr(pred, 'shape') else 'N/A'}")
-                        st.write(f"🔍 Débogage: future_dates - type: {type(future_dates)}, len: {len(future_dates)}")
-                        
                         pred_df = pd.DataFrame({
                             'date': future_dates,
                             'accidents': pred
