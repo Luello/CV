@@ -2382,50 +2382,50 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 df_comparison = pd.DataFrame(comparison_data)
                 st.dataframe(df_comparison, use_container_width=True)
                 
-                # Analyse des erreurs
-                if len(real_2023_df) > 0 and any(pred is not None for pred in predictions):
-                    st.subheader("📊 Analyse des erreurs de prédiction")
-                    
-                    try:
+                # Analyse des erreurs (après l'affichage des graphiques)
+                try:
+                    if len(real_2023_df) > 0 and any(pred is not None for pred in predictions):
+                        st.subheader("📊 Analyse des erreurs de prédiction")
+                        
                         real_2023_monthly = real_2023_df.groupby(real_2023_df['date'].dt.to_period('M'))['accidents'].sum()
                         if len(real_2023_monthly) > 0:
                             real_avg = float(real_2023_monthly.mean())
                         else:
                             st.warning("Pas de données réelles 2023 disponibles pour la comparaison")
                             real_avg = 0
-                    except Exception as e:
-                        st.warning(f"Erreur lors du calcul des données réelles 2023: {str(e)}")
-                        real_avg = 0
-                    
-                    error_data = []
-                    for pred, name in zip(predictions, names):
-                        if pred is not None:
-                            pred_avg = float(np.mean(pred))
-                            mae = abs(real_avg - pred_avg)
-                            if real_avg > 0:
-                                mape = (mae / real_avg) * 100
-                            else:
-                                mape = 0
-                            error_data.append({
-                                'Modèle': name,
-                                'MAE': f"{mae:.1f}",
-                                'MAPE (%)': f"{mape:.1f}",
-                                'Prédiction moyenne': f"{pred_avg:.1f}"
-                            })
-                    
-                    if error_data:
-                        df_errors = pd.DataFrame(error_data)
-                        st.dataframe(df_errors, use_container_width=True)
                         
-                        # Meilleur modèle
-                        best_model_idx = min(range(len(error_data)), key=lambda i: float(str(error_data[i]['MAPE (%)']).replace('%', '')))
-                        best_model_name = error_data[best_model_idx]['Modèle']
-                        best_mape = error_data[best_model_idx]['MAPE (%)']
+                        error_data = []
+                        for pred, name in zip(predictions, names):
+                            if pred is not None:
+                                pred_avg = float(np.mean(pred))
+                                mae = abs(real_avg - pred_avg)
+                                if real_avg > 0:
+                                    mape = (mae / real_avg) * 100
+                                else:
+                                    mape = 0
+                                error_data.append({
+                                    'Modèle': name,
+                                    'MAE': f"{mae:.1f}",
+                                    'MAPE (%)': f"{mape:.1f}",
+                                    'Prédiction moyenne': f"{pred_avg:.1f}"
+                                })
                         
-                        st.success(f"🏆 **Meilleur modèle** : {best_model_name} avec une erreur de {best_mape}")
+                        if error_data:
+                            df_errors = pd.DataFrame(error_data)
+                            st.dataframe(df_errors, use_container_width=True)
+                            
+                            # Meilleur modèle
+                            best_model_idx = min(range(len(error_data)), key=lambda i: float(str(error_data[i]['MAPE (%)']).replace('%', '')))
+                            best_model_name = error_data[best_model_idx]['Modèle']
+                            best_mape = error_data[best_model_idx]['MAPE (%)']
+                            
+                            st.success(f"🏆 **Meilleur modèle** : {best_model_name} avec une erreur de {best_mape}")
+                except Exception as e:
+                    st.warning(f"Erreur lors de l'analyse des erreurs : {str(e)}")
                 
             except Exception as e:
                 st.error(f"Erreur lors de l'import des librairies : {str(e)}")
+        
         
         else:
             st.error("Impossible de charger les données pour les prédictions.")
