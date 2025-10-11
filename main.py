@@ -2225,15 +2225,15 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 # Données historiques (jusqu'à fin 2022 pour l'entraînement)
                 hist_df = ts_clean.reset_index()
-                hist_df = hist_df[hist_df['date'] < '2023-01-01']
+              
                 
                 # Données réelles 2023 (pour comparaison)
                 real_2023_df = ts_clean.reset_index()
-                real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
+               
                 
                 # Données historiques complètes (incluant 2023 pour l'affichage)
                 hist_full_df = ts_clean.reset_index()
-                hist_full_df = hist_full_df[hist_full_df['date'] <= '2023-12-31']
+              
                 
                 
                 # Création du graphique avec données complètes jusqu'à fin 2023
