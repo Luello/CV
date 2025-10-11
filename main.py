@@ -2121,21 +2121,10 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
         if daily_data is not None and monthly_data is not None:
             st.success("✅ Données chargées pour les prédictions")
             
-            # Sélection du type de données
-            data_type = st.selectbox(
-                "Type de données pour la prédiction",
-                ["Mensuelles (recommandé)", "Quotidiennes"],
-                help="Les données mensuelles sont plus stables pour SARIMA"
-            )
-            
-            if data_type == "Mensuelles (recommandé)":
-                ts_data = monthly_data
-                freq = 'M'
-                period_name = "mois"
-            else:
-                ts_data = daily_data
-                freq = 'D'
-                period_name = "jour"
+            # Utilisation des données mensuelles (plus stables pour SARIMA)
+            ts_data = monthly_data
+            freq = 'M'
+            period_name = "mois"
             
             # Affichage des données historiques
             st.subheader("📊 Données historiques")
@@ -2146,214 +2135,250 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             with col2:
                 st.metric("Total accidents", f"{ts_data['accidents'].sum():,}")
             
-            # Graphique des données historiques
-            fig_hist = px.line(
-                ts_data.reset_index(),
-                x='date',
-                y='accidents',
-                title=f"Évolution du nombre d'accidents par {period_name}",
-                labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'}
-            )
-            fig_hist.update_layout(xaxis_title="Date", yaxis_title="Nombre d'accidents")
-            st.plotly_chart(fig_hist, use_container_width=True)
+            # Graphique des données historiques (sera mis à jour avec les prédictions)
+            st.info("📊 Graphique mis à jour avec les prédictions SARIMA 2023 ci-dessous...")
             
-            # Configuration du modèle SARIMA
-            st.subheader("⚙️ Configuration du modèle SARIMA")
+            # Prédiction SARIMA automatique
+            st.subheader("🔮 Prédictions SARIMA 2023")
+            st.markdown("Modèle SARIMA(1,1,1)x(1,1,1,12) - Prédictions automatiques pour 2023")
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                p = st.slider("p (AR)", 0, 3, 1, help="Ordre de la partie autorégressive")
-            with col2:
-                d = st.slider("d (Différenciation)", 0, 2, 1, help="Ordre de différenciation")
-            with col3:
-                q = st.slider("q (MA)", 0, 3, 1, help="Ordre de la partie moyenne mobile")
+            # Paramètres fixes optimisés
+            p, d, q = 1, 1, 1
+            P, D, Q, s = 1, 1, 1, 12
+            periods = 12  # 12 mois pour 2023
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                P = st.slider("P (SAR)", 0, 2, 1, help="Ordre saisonnier autorégressif")
-            with col2:
-                D = st.slider("D (Saisonnière)", 0, 1, 1, help="Ordre de différenciation saisonnière")
-            with col3:
-                Q = st.slider("Q (SMA)", 0, 2, 1, help="Ordre saisonnier moyenne mobile")
-            
-            # Période saisonnière
-            if freq == 'M':
-                s = st.selectbox("Période saisonnière", [12], help="12 mois = 1 an")
-            else:
-                s = st.selectbox("Période saisonnière", [7, 30, 365], help="7 jours = 1 semaine, 30 jours = 1 mois, 365 jours = 1 an")
-            
-            # Nombre de périodes à prédire
-            periods = st.slider("Périodes à prédire", 1, 24, 12, help="Nombre de périodes futures à prédire")
-            
-            # Bouton pour lancer la prédiction
-            if st.button("🚀 Lancer la prédiction SARIMA", type="primary"):
-                with st.spinner("Entraînement du modèle SARIMA en cours..."):
-                    try:
-                        from statsmodels.tsa.statespace.sarimax import SARIMAX
-                        from statsmodels.tsa.seasonal import seasonal_decompose
-                        import warnings
-                        warnings.filterwarnings('ignore')
-                        
-                        # Préparation des données
-                        ts_clean = ts_data.dropna()
-                        
-                        # Entraînement du modèle SARIMA
-                        model = SARIMAX(
-                            ts_clean['accidents'],
-                            order=(p, d, q),
-                            seasonal_order=(P, D, Q, s),
-                            enforce_stationarity=False,
-                            enforce_invertibility=False
+            with st.spinner("Entraînement du modèle SARIMA en cours..."):
+                try:
+                    from statsmodels.tsa.statespace.sarimax import SARIMAX
+                    from statsmodels.tsa.seasonal import seasonal_decompose
+                    import warnings
+                    warnings.filterwarnings('ignore')
+                    
+                    # Préparation des données
+                    ts_clean = ts_data.dropna()
+                    
+                    # Entraînement du modèle SARIMA
+                    model = SARIMAX(
+                        ts_clean['accidents'],
+                        order=(p, d, q),
+                        seasonal_order=(P, D, Q, s),
+                        enforce_stationarity=False,
+                        enforce_invertibility=False
+                    )
+                    
+                    fitted_model = model.fit(disp=False)
+                    
+                    # Prédictions
+                    forecast = fitted_model.get_forecast(steps=periods)
+                    forecast_mean = forecast.predicted_mean
+                    forecast_ci = forecast.conf_int()
+                    
+                    # Création des dates futures
+                    last_date = ts_clean.index[-1]
+                    if freq == 'M':
+                        future_dates = pd.date_range(start=last_date, periods=periods+1, freq='MS')[1:]
+                    else:
+                        future_dates = pd.date_range(start=last_date, periods=periods+1, freq='D')[1:]
+                    
+                    # Création du DataFrame des prédictions
+                    predictions_df = pd.DataFrame({
+                        'date': future_dates,
+                        'accidents': forecast_mean.values,
+                        'lower_bound': forecast_ci.iloc[:, 0].values,
+                        'upper_bound': forecast_ci.iloc[:, 1].values
+                    })
+                    predictions_df = predictions_df.set_index('date')
+                    
+                    # Affichage des résultats
+                    st.success("✅ Prédiction terminée avec succès!")
+                    
+                    # Métriques du modèle
+                    st.subheader("📈 Performance du modèle")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("AIC", f"{fitted_model.aic:.2f}")
+                    with col2:
+                        st.metric("BIC", f"{fitted_model.bic:.2f}")
+                    with col3:
+                        st.metric("Log-Likelihood", f"{fitted_model.llf:.2f}")
+                    
+                    # Graphique principal avec prédictions 2023
+                    st.subheader("📊 Évolution des accidents avec prédictions SARIMA 2023")
+                    
+                    # Données historiques (2017-2022)
+                    hist_df = ts_clean.reset_index()
+                    hist_df = hist_df[hist_df['date'] < '2023-01-01']  # Données jusqu'à fin 2022
+                    hist_df['type'] = 'Données historiques (2017-2022)'
+                    
+                    # Données réelles 2023 si disponibles
+                    real_2023_df = ts_clean.reset_index()
+                    real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
+                    if len(real_2023_df) > 0:
+                        real_2023_df['type'] = 'Données réelles 2023'
+                    
+                    # Données de prédiction 2023
+                    pred_df = predictions_df.reset_index()
+                    pred_df['type'] = 'Prédictions SARIMA 2023'
+                    
+                    # Création du graphique combiné
+                    fig_pred = px.line(
+                        hist_df,
+                        x='date',
+                        y='accidents',
+                        title="Évolution des accidents avec prédictions SARIMA 2023",
+                        labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'},
+                        color_discrete_map={'Données historiques (2017-2022)': 'blue'}
+                    )
+                    
+                    # Ajout des données réelles 2023 si disponibles
+                    if len(real_2023_df) > 0:
+                        fig_pred.add_scatter(
+                            x=real_2023_df['date'],
+                            y=real_2023_df['accidents'],
+                            mode='lines+markers',
+                            name='Données réelles 2023',
+                            line=dict(color='green', width=3),
+                            marker=dict(size=6)
                         )
+                    
+                    # Ajout des prédictions 2023
+                    fig_pred.add_scatter(
+                        x=pred_df['date'],
+                        y=pred_df['accidents'],
+                        mode='lines+markers',
+                        name='Prédictions SARIMA 2023',
+                        line=dict(color='red', dash='dash', width=2),
+                        marker=dict(size=5)
+                    )
+                    
+                    # Ajout des intervalles de confiance
+                    fig_pred.add_scatter(
+                        x=pred_df['date'],
+                        y=pred_df['upper_bound'],
+                        mode='lines',
+                        name='Intervalle de confiance supérieur',
+                        line=dict(color='rgba(255,0,0,0.3)', width=0),
+                        showlegend=False
+                    )
+                    
+                    fig_pred.add_scatter(
+                        x=pred_df['date'],
+                        y=pred_df['lower_bound'],
+                        mode='lines',
+                        name='Intervalle de confiance 95%',
+                        fill='tonexty',
+                        fillcolor='rgba(255,0,0,0.2)',
+                        line=dict(color='rgba(255,0,0,0.3)', width=0)
+                    )
+                    
+                    # Ligne verticale pour séparer 2022 et 2023
+                    fig_pred.add_vline(
+                        x='2023-01-01',
+                        line_dash="dot",
+                        line_color="gray",
+                        annotation_text="Début 2023",
+                        annotation_position="top"
+                    )
+                    
+                    fig_pred.update_layout(
+                        xaxis_title="Date",
+                        yaxis_title="Nombre d'accidents",
+                        hovermode='x unified',
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        )
+                    )
+                    
+                    st.plotly_chart(fig_pred, use_container_width=True)
+                    
+                    # Tableau des prédictions
+                    st.subheader("📋 Détail des prédictions")
+                    
+                    # Formatage des prédictions pour l'affichage
+                    pred_display = predictions_df.copy()
+                    pred_display['accidents'] = pred_display['accidents'].round(1)
+                    pred_display['lower_bound'] = pred_display['lower_bound'].round(1)
+                    pred_display['upper_bound'] = pred_display['upper_bound'].round(1)
+                    pred_display['date'] = pred_display.index.strftime('%Y-%m-%d')
+                    pred_display = pred_display.reset_index(drop=True)
+                    pred_display.columns = ['Date', 'Prédiction', 'Borne inférieure', 'Borne supérieure']
+                    
+                    st.dataframe(pred_display, use_container_width=True)
+                    
+                    # Comparaison prédictions vs réel 2023
+                    st.subheader("📊 Comparaison Prédictions vs Réel 2023")
+                    
+                    if len(real_2023_df) > 0:
+                        # Calcul des métriques de comparaison
+                        real_2023_avg = real_2023_df['accidents'].mean()
+                        pred_2023_avg = predictions_df['accidents'].mean()
+                        mae_2023 = abs(real_2023_avg - pred_2023_avg)
+                        mape_2023 = (mae_2023 / real_2023_avg) * 100
                         
-                        fitted_model = model.fit(disp=False)
-                        
-                        # Prédictions
-                        forecast = fitted_model.get_forecast(steps=periods)
-                        forecast_mean = forecast.predicted_mean
-                        forecast_ci = forecast.conf_int()
-                        
-                        # Création des dates futures
-                        last_date = ts_clean.index[-1]
-                        if freq == 'M':
-                            future_dates = pd.date_range(start=last_date, periods=periods+1, freq='MS')[1:]
-                        else:
-                            future_dates = pd.date_range(start=last_date, periods=periods+1, freq='D')[1:]
-                        
-                        # Création du DataFrame des prédictions
-                        predictions_df = pd.DataFrame({
-                            'date': future_dates,
-                            'accidents': forecast_mean.values,
-                            'lower_bound': forecast_ci.iloc[:, 0].values,
-                            'upper_bound': forecast_ci.iloc[:, 1].values
-                        })
-                        predictions_df = predictions_df.set_index('date')
-                        
-                        # Affichage des résultats
-                        st.success("✅ Prédiction terminée avec succès!")
-                        
-                        # Métriques du modèle
-                        st.subheader("📈 Performance du modèle")
-                        
-                        col1, col2, col3 = st.columns(3)
+                        col1, col2, col3, col4 = st.columns(4)
                         with col1:
-                            st.metric("AIC", f"{fitted_model.aic:.2f}")
+                            st.metric("Données réelles 2023", f"{real_2023_avg:.1f}")
                         with col2:
-                            st.metric("BIC", f"{fitted_model.bic:.2f}")
+                            st.metric("Prédictions 2023", f"{pred_2023_avg:.1f}")
                         with col3:
-                            st.metric("Log-Likelihood", f"{fitted_model.llf:.2f}")
+                            st.metric("Erreur absolue", f"{mae_2023:.1f}")
+                        with col4:
+                            st.metric("Erreur relative", f"{mape_2023:.1f}%")
                         
-                        # Graphique des prédictions
-                        st.subheader("🔮 Prédictions 2023-2024")
-                        
-                        # Données historiques pour le graphique
-                        hist_df = ts_clean.reset_index()
-                        hist_df['type'] = 'Historique'
-                        
-                        # Données de prédiction
-                        pred_df = predictions_df.reset_index()
-                        pred_df['type'] = 'Prédiction'
-                        
-                        # Création du graphique combiné
-                        fig_pred = px.line(
-                            hist_df,
-                            x='date',
-                            y='accidents',
-                            title=f"Prédictions SARIMA({p},{d},{q})x({P},{D},{Q},{s})",
-                            labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'},
-                            color_discrete_map={'Historique': 'blue'}
-                        )
-                        
-                        # Ajout des prédictions
-                        fig_pred.add_scatter(
-                            x=pred_df['date'],
-                            y=pred_df['accidents'],
-                            mode='lines',
-                            name='Prédiction',
-                            line=dict(color='red', dash='dash')
-                        )
-                        
-                        # Ajout des intervalles de confiance
-                        fig_pred.add_scatter(
-                            x=pred_df['date'],
-                            y=pred_df['upper_bound'],
-                            mode='lines',
-                            name='Intervalle de confiance supérieur',
-                            line=dict(color='rgba(255,0,0,0.3)', width=0),
-                            showlegend=False
-                        )
-                        
-                        fig_pred.add_scatter(
-                            x=pred_df['date'],
-                            y=pred_df['lower_bound'],
-                            mode='lines',
-                            name='Intervalle de confiance',
-                            fill='tonexty',
-                            fillcolor='rgba(255,0,0,0.2)',
-                            line=dict(color='rgba(255,0,0,0.3)', width=0)
-                        )
-                        
-                        fig_pred.update_layout(
-                            xaxis_title="Date",
-                            yaxis_title="Nombre d'accidents",
-                            hovermode='x unified'
-                        )
-                        
-                        st.plotly_chart(fig_pred, use_container_width=True)
-                        
-                        # Tableau des prédictions
-                        st.subheader("📋 Détail des prédictions")
-                        
-                        # Formatage des prédictions pour l'affichage
-                        pred_display = predictions_df.copy()
-                        pred_display['accidents'] = pred_display['accidents'].round(1)
-                        pred_display['lower_bound'] = pred_display['lower_bound'].round(1)
-                        pred_display['upper_bound'] = pred_display['upper_bound'].round(1)
-                        pred_display['date'] = pred_display.index.strftime('%Y-%m-%d')
-                        pred_display = pred_display.reset_index(drop=True)
-                        pred_display.columns = ['Date', 'Prédiction', 'Borne inférieure', 'Borne supérieure']
-                        
-                        st.dataframe(pred_display, use_container_width=True)
-                        
-                        # Analyse des tendances
-                        st.subheader("📊 Analyse des tendances")
-                        
-                        # Calcul des tendances
-                        recent_avg = ts_clean.tail(12).mean()['accidents'] if len(ts_clean) >= 12 else ts_clean.mean()['accidents']
-                        pred_avg = predictions_df['accidents'].mean()
-                        trend = ((pred_avg - recent_avg) / recent_avg) * 100
-                        
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Moyenne récente", f"{recent_avg:.1f}")
-                        with col2:
-                            st.metric("Moyenne prédite", f"{pred_avg:.1f}")
-                        with col3:
-                            trend_color = "normal" if abs(trend) < 5 else "inverse" if trend > 0 else "normal"
-                            st.metric("Tendance", f"{trend:+.1f}%", delta=f"{trend:+.1f}%")
-                        
-                        # Recommandations
-                        st.subheader("💡 Recommandations")
-                        
-                        if trend > 5:
-                            st.warning("⚠️ **Tendance à la hausse détectée** - Il est recommandé de renforcer les mesures de sécurité routière.")
-                        elif trend < -5:
-                            st.success("✅ **Tendance à la baisse détectée** - Les mesures actuelles semblent efficaces.")
+                        # Évaluation de la précision
+                        if mape_2023 < 10:
+                            st.success(f"✅ **Excellente précision** - Erreur de {mape_2023:.1f}%")
+                        elif mape_2023 < 20:
+                            st.info(f"ℹ️ **Bonne précision** - Erreur de {mape_2023:.1f}%")
                         else:
-                            st.info("ℹ️ **Tendance stable** - Maintenir les mesures de sécurité actuelles.")
-                        
-                        # Export des prédictions
-                        csv = predictions_df.to_csv()
-                        st.download_button(
-                            label="📥 Télécharger les prédictions (CSV)",
-                            data=csv,
-                            file_name=f"predictions_sarima_{periods}periods.csv",
-                            mime="text/csv"
-                        )
-                        
-                    except Exception as e:
-                        st.error(f"Erreur lors de la prédiction : {str(e)}")
-                        st.info("💡 Essayez de modifier les paramètres du modèle ou de changer le type de données.")
+                            st.warning(f"⚠️ **Précision modérée** - Erreur de {mape_2023:.1f}%")
+                    else:
+                        st.info("ℹ️ Données réelles 2023 non disponibles pour la comparaison")
+                    
+                    # Analyse des tendances
+                    st.subheader("📈 Analyse des tendances")
+                    
+                    # Calcul des tendances
+                    recent_avg = ts_clean.tail(12).mean()['accidents'] if len(ts_clean) >= 12 else ts_clean.mean()['accidents']
+                    pred_avg = predictions_df['accidents'].mean()
+                    trend = ((pred_avg - recent_avg) / recent_avg) * 100
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Moyenne récente (2022)", f"{recent_avg:.1f}")
+                    with col2:
+                        st.metric("Moyenne prédite 2023", f"{pred_avg:.1f}")
+                    with col3:
+                        trend_color = "normal" if abs(trend) < 5 else "inverse" if trend > 0 else "normal"
+                        st.metric("Tendance", f"{trend:+.1f}%", delta=f"{trend:+.1f}%")
+                    
+                    # Recommandations
+                    st.subheader("💡 Recommandations")
+                    
+                    if trend > 5:
+                        st.warning("⚠️ **Tendance à la hausse détectée** - Il est recommandé de renforcer les mesures de sécurité routière.")
+                    elif trend < -5:
+                        st.success("✅ **Tendance à la baisse détectée** - Les mesures actuelles semblent efficaces.")
+                    else:
+                        st.info("ℹ️ **Tendance stable** - Maintenir les mesures de sécurité actuelles.")
+                    
+                    # Export des prédictions
+                    csv = predictions_df.to_csv()
+                    st.download_button(
+                        label="📥 Télécharger les prédictions (CSV)",
+                        data=csv,
+                        file_name=f"predictions_sarima_{periods}periods.csv",
+                        mime="text/csv"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"Erreur lors de la prédiction : {str(e)}")
+                    st.info("💡 Essayez de modifier les paramètres du modèle ou de changer le type de données.")
             
             # Informations sur SARIMA
             with st.expander("ℹ️ À propos de SARIMA"):
