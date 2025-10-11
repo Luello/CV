@@ -2212,8 +2212,12 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 # Modèle 3: SARIMA sans COVID
                 st.subheader("📊 Modèle 3: SARIMA sans année COVID (2020)")
                 try:
+                    st.write("🔍 **Debug: Début Modèle 3...**")
                     ts_no_covid = ts_clean[~((ts_clean.index >= '2020-01-01') & (ts_clean.index < '2021-01-01'))]
+                    st.write(f"✅ **Debug: Données sans COVID - {len(ts_no_covid)} points")
+                    
                     if len(ts_no_covid) > 12:
+                        st.write("🔍 **Debug: Entraînement Modèle 3...**")
                         model3 = SARIMAX(ts_no_covid['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
                         fitted3 = model3.fit(disp=False)
                         forecast3 = fitted3.get_forecast(steps=periods)
@@ -2224,7 +2228,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         pred3 = pred1
                 except Exception as e:
                     st.error(f"❌ Erreur Modèle 3: {str(e)}")
-                    pred3 = None
+                    st.write(f"🔍 **Debug: Erreur détaillée Modèle 3: {type(e).__name__}")
+                    pred3 = pred1  # Utiliser pred1 au lieu de None pour éviter les erreurs
                 
                 # Graphique comparatif
                 st.subheader("📊 Comparaison des prédictions 2023")
@@ -2293,6 +2298,14 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         st.write(f"- {name}: {len(pred)} valeurs, min={pred.min():.1f}, max={pred.max():.1f}")
                     else:
                         st.write(f"- {name}: Aucune prédiction disponible")
+                
+                # Vérification qu'au moins une prédiction est disponible
+                valid_predictions = [p for p in predictions if p is not None]
+                if len(valid_predictions) == 0:
+                    st.error("❌ Aucune prédiction valide disponible - impossible de créer le graphique")
+                    st.stop()
+                else:
+                    st.write(f"✅ **Debug: {len(valid_predictions)} prédictions valides disponibles**")
                 
                 for i, (pred, name) in enumerate(zip(predictions, names)):
                     if pred is not None and fig is not None and len(pred) > 0:
