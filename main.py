@@ -2170,6 +2170,68 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     forecast1 = fitted1.get_forecast(steps=periods)
                     pred1 = forecast1.predicted_mean.values
                     st.success("✅ Modèle 1 entraîné avec succès")
+                    
+                    # Graphique pour le Modèle 1
+                    st.subheader("📈 Visualisation Modèle 1")
+                    fig1 = go.Figure()
+                    
+                    # Données historiques
+                    hist_df = ts_clean[ts_clean.index < '2023-01-01'].reset_index()
+                    fig1.add_trace(go.Scatter(
+                        x=hist_df['date'],
+                        y=hist_df['accidents'],
+                        mode='lines+markers',
+                        name='Données historiques (2017-2022)',
+                        line=dict(color='blue', width=2),
+                        marker=dict(size=4)
+                    ))
+                    
+                    # Prédictions 2023
+                    pred_df1 = pd.DataFrame({
+                        'date': future_dates,
+                        'accidents': pred1
+                    })
+                    fig1.add_trace(go.Scatter(
+                        x=pred_df1['date'],
+                        y=pred_df1['accidents'],
+                        mode='lines+markers',
+                        name='Prédictions 2023',
+                        line=dict(color='red', width=3, dash='dash'),
+                        marker=dict(size=6)
+                    ))
+                    
+                    # Données réelles 2023 si disponibles
+                    real_2023_df = ts_clean[ts_clean.index >= '2023-01-01'].reset_index()
+                    if len(real_2023_df) > 0:
+                        fig1.add_trace(go.Scatter(
+                            x=real_2023_df['date'],
+                            y=real_2023_df['accidents'],
+                            mode='lines+markers',
+                            name='Données réelles 2023',
+                            line=dict(color='green', width=3),
+                            marker=dict(size=6)
+                        ))
+                    
+                    # Configuration du graphique
+                    fig1.update_layout(
+                        title="Modèle 1: SARIMA Standard - Données historiques et prédictions 2023",
+                        xaxis_title="Date",
+                        yaxis_title="Nombre d'accidents",
+                        height=500,
+                        hovermode='x unified'
+                    )
+                    
+                    # Ligne verticale pour 2023
+                    fig1.add_vline(
+                        x='2023-01-01',
+                        line_dash="dot",
+                        line_color="gray",
+                        annotation_text="Début 2023",
+                        annotation_position="top"
+                    )
+                    
+                    st.plotly_chart(fig1, use_container_width=True)
+                    
                 except Exception as e:
                     st.error(f"❌ Erreur Modèle 1: {str(e)}")
                     pred1 = None
@@ -2199,6 +2261,66 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             forecast2 = fitted2.get_forecast(steps=periods, exog=future_weather)
                             pred2 = forecast2.predicted_mean.values
                             st.success("✅ Modèle 2 entraîné avec succès")
+                            
+                            # Graphique pour le Modèle 2
+                            st.subheader("📈 Visualisation Modèle 2")
+                            fig2 = go.Figure()
+                            
+                            # Données historiques
+                            fig2.add_trace(go.Scatter(
+                                x=hist_df['date'],
+                                y=hist_df['accidents'],
+                                mode='lines+markers',
+                                name='Données historiques (2017-2022)',
+                                line=dict(color='blue', width=2),
+                                marker=dict(size=4)
+                            ))
+                            
+                            # Prédictions 2023
+                            pred_df2 = pd.DataFrame({
+                                'date': future_dates,
+                                'accidents': pred2
+                            })
+                            fig2.add_trace(go.Scatter(
+                                x=pred_df2['date'],
+                                y=pred_df2['accidents'],
+                                mode='lines+markers',
+                                name='Prédictions 2023 (avec météo)',
+                                line=dict(color='orange', width=3, dash='dash'),
+                                marker=dict(size=6)
+                            ))
+                            
+                            # Données réelles 2023 si disponibles
+                            if len(real_2023_df) > 0:
+                                fig2.add_trace(go.Scatter(
+                                    x=real_2023_df['date'],
+                                    y=real_2023_df['accidents'],
+                                    mode='lines+markers',
+                                    name='Données réelles 2023',
+                                    line=dict(color='green', width=3),
+                                    marker=dict(size=6)
+                                ))
+                            
+                            # Configuration du graphique
+                            fig2.update_layout(
+                                title="Modèle 2: SARIMA + Météo - Données historiques et prédictions 2023",
+                                xaxis_title="Date",
+                                yaxis_title="Nombre d'accidents",
+                                height=500,
+                                hovermode='x unified'
+                            )
+                            
+                            # Ligne verticale pour 2023
+                            fig2.add_vline(
+                                x='2023-01-01',
+                                line_dash="dot",
+                                line_color="gray",
+                                annotation_text="Début 2023",
+                                annotation_position="top"
+                            )
+                            
+                            st.plotly_chart(fig2, use_container_width=True)
+                            
                         else:
                             st.warning("Pas assez de données météo - utilisation du modèle standard")
                             pred2 = pred1
@@ -2223,6 +2345,67 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         forecast3 = fitted3.get_forecast(steps=periods)
                         pred3 = forecast3.predicted_mean.values
                         st.success("✅ Modèle 3 entraîné avec succès")
+                        
+                        # Graphique pour le Modèle 3
+                        st.subheader("📈 Visualisation Modèle 3")
+                        fig3 = go.Figure()
+                        
+                        # Données historiques (sans COVID)
+                        ts_no_covid_df = ts_no_covid.reset_index()
+                        fig3.add_trace(go.Scatter(
+                            x=ts_no_covid_df['date'],
+                            y=ts_no_covid_df['accidents'],
+                            mode='lines+markers',
+                            name='Données historiques (sans 2020)',
+                            line=dict(color='blue', width=2),
+                            marker=dict(size=4)
+                        ))
+                        
+                        # Prédictions 2023
+                        pred_df3 = pd.DataFrame({
+                            'date': future_dates,
+                            'accidents': pred3
+                        })
+                        fig3.add_trace(go.Scatter(
+                            x=pred_df3['date'],
+                            y=pred_df3['accidents'],
+                            mode='lines+markers',
+                            name='Prédictions 2023 (sans COVID)',
+                            line=dict(color='purple', width=3, dash='dash'),
+                            marker=dict(size=6)
+                        ))
+                        
+                        # Données réelles 2023 si disponibles
+                        if len(real_2023_df) > 0:
+                            fig3.add_trace(go.Scatter(
+                                x=real_2023_df['date'],
+                                y=real_2023_df['accidents'],
+                                mode='lines+markers',
+                                name='Données réelles 2023',
+                                line=dict(color='green', width=3),
+                                marker=dict(size=6)
+                            ))
+                        
+                        # Configuration du graphique
+                        fig3.update_layout(
+                            title="Modèle 3: SARIMA sans COVID - Données historiques et prédictions 2023",
+                            xaxis_title="Date",
+                            yaxis_title="Nombre d'accidents",
+                            height=500,
+                            hovermode='x unified'
+                        )
+                        
+                        # Ligne verticale pour 2023
+                        fig3.add_vline(
+                            x='2023-01-01',
+                            line_dash="dot",
+                            line_color="gray",
+                            annotation_text="Début 2023",
+                            annotation_position="top"
+                        )
+                        
+                        st.plotly_chart(fig3, use_container_width=True)
+                        
                     else:
                         st.warning("Pas assez de données sans COVID - utilisation du modèle standard")
                         pred3 = pred1
@@ -2234,275 +2417,40 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             except Exception as e:
                 st.error(f"Erreur lors de l'import des librairies : {str(e)}")
         
-        # AFFICHAGE DES GRAPHIQUES (en dehors du bloc try principal)
+        # Tableau de comparaison des prédictions (en dehors du bloc try principal)
         if 'ts_data' in locals() and ts_data is not None:
-            st.subheader("📊 Comparaison des prédictions 2023")
-            st.write("🔍 **Debug: Début de la création des graphiques...**")
+            st.subheader("📋 Tableau de comparaison des prédictions 2023")
             
-            # Préparation des données pour les graphiques
+            # Préparation des données pour le tableau
             ts_clean = ts_data.dropna()
             future_dates = pd.date_range(start='2023-01-01', periods=12, freq='MS')
-            
-            # Données historiques (jusqu'à fin 2022 pour l'entraînement)
-            hist_df = ts_clean[ts_clean.index < '2023-01-01'].reset_index()
-            
-            # Données réelles 2023 (pour comparaison)
             real_2023_df = ts_clean[ts_clean.index >= '2023-01-01'].reset_index()
             
-            # Debug: Affichage des informations sur les données
-            st.write(f"📊 **Debug des données:**")
-            st.write(f"- Données historiques (avant 2023): {len(hist_df)} points")
-            st.write(f"- Données réelles 2023: {len(real_2023_df)} points")
-            
-            if len(hist_df) > 0:
-                st.write(f"- Période historique: {hist_df['date'].min()} à {hist_df['date'].max()}")
-            if len(real_2023_df) > 0:
-                st.write(f"- Période 2023: {real_2023_df['date'].min()} à {real_2023_df['date'].max()}")
-            
-            # Création du graphique avec données historiques
-            if len(hist_df) > 0:
-                import plotly.graph_objects as go
-                
-                # GRAPHIQUE 1: Données historiques uniquement
-                st.subheader("📊 Graphique 1: Données historiques (2017-2022)")
-                fig_hist = go.Figure()
-                fig_hist.add_trace(go.Scatter(
-                    x=hist_df['date'],
-                    y=hist_df['accidents'],
-                    mode='lines+markers',
-                    name='Données historiques',
-                    line=dict(color='blue', width=2),
-                    marker=dict(size=4)
-                ))
-                fig_hist.update_layout(
-                    title="Données historiques des accidents (2017-2022)",
-                    xaxis_title="Date",
-                    yaxis_title="Nombre d'accidents",
-                    height=400
-                )
-                st.plotly_chart(fig_hist, use_container_width=True)
-                
-                # GRAPHIQUE 2: Données 2023 uniquement
-                if len(real_2023_df) > 0:
-                    st.subheader("📊 Graphique 2: Données réelles 2023")
-                    fig_2023 = go.Figure()
-                    fig_2023.add_trace(go.Scatter(
-                        x=real_2023_df['date'],
-                        y=real_2023_df['accidents'],
-                        mode='lines+markers',
-                        name='Données réelles 2023',
-                        line=dict(color='green', width=3),
-                        marker=dict(size=6)
-                    ))
-                    fig_2023.update_layout(
-                        title="Données réelles 2023",
-                        xaxis_title="Date",
-                        yaxis_title="Nombre d'accidents",
-                        height=400
-                    )
-                    st.plotly_chart(fig_2023, use_container_width=True)
-                
-                # GRAPHIQUE PRINCIPAL: Tous les éléments combinés
-                st.subheader("📊 Graphique principal: Comparaison complète")
-                fig = go.Figure()
-                
-                # Ajout des données historiques
-                fig.add_trace(go.Scatter(
-                    x=hist_df['date'],
-                    y=hist_df['accidents'],
-                    mode='lines+markers',
-                    name='Données historiques',
-                    line=dict(color='blue', width=2),
-                    marker=dict(size=4)
-                ))
-                
-                # Ajout des données réelles 2023
-                if len(real_2023_df) > 0:
-                    fig.add_trace(go.Scatter(
-                        x=real_2023_df['date'],
-                        y=real_2023_df['accidents'],
-                        mode='lines+markers',
-                        name='Données réelles 2023',
-                        line=dict(color='green', width=3),
-                        marker=dict(size=6)
-                    ))
-                
-                # Ajout des prédictions (si disponibles)
-                colors = ['red', 'orange', 'purple']
-                names = ['SARIMA standard', 'SARIMA + Météo', 'SARIMA sans COVID']
-                
-                # Vérifier si les prédictions existent
-                predictions = []
-                if 'pred1' in locals() and pred1 is not None:
-                    predictions.append(pred1)
-                else:
-                    predictions.append(None)
-                    
-                if 'pred2' in locals() and pred2 is not None:
-                    predictions.append(pred2)
-                else:
-                    predictions.append(None)
-                    
-                if 'pred3' in locals() and pred3 is not None:
-                    predictions.append(pred3)
-                else:
-                    predictions.append(None)
-                
-                st.write(f"🔍 **Debug des prédictions:**")
-                for i, (pred, name) in enumerate(zip(predictions, names)):
-                    if pred is not None:
-                        st.write(f"- {name}: {len(pred)} valeurs, min={pred.min():.1f}, max={pred.max():.1f}")
-                    else:
-                        st.write(f"- {name}: Aucune prédiction disponible")
-                
-                # GRAPHIQUES SÉPARÉS POUR CHAQUE PRÉDICTION
-                for i, (pred, name) in enumerate(zip(predictions, names)):
-                    if pred is not None and len(pred) > 0:
-                        st.subheader(f"📊 Graphique {i+3}: Prédictions {name}")
-                        pred_df = pd.DataFrame({
-                            'date': future_dates,
-                            'accidents': pred
-                        })
-                        
-                        fig_pred = go.Figure()
-                        fig_pred.add_trace(go.Scatter(
-                            x=pred_df['date'],
-                            y=pred_df['accidents'],
-                            mode='lines+markers',
-                            name=f'Prédictions {name}',
-                            line=dict(color=colors[i], width=3),
-                            marker=dict(size=6)
-                        ))
-                        fig_pred.update_layout(
-                            title=f"Prédictions {name} pour 2023",
-                            xaxis_title="Date",
-                            yaxis_title="Nombre d'accidents",
-                            height=400
-                        )
-                        st.plotly_chart(fig_pred, use_container_width=True)
-                        
-                        # Ajout au graphique principal
-                        fig.add_trace(go.Scatter(
-                            x=pred_df['date'],
-                            y=pred_df['accidents'],
-                            mode='lines+markers',
-                            name=f'Prédictions {name}',
-                            line=dict(color=colors[i], dash='dash', width=2),
-                            marker=dict(size=4)
-                        ))
-                    else:
-                        st.warning(f"⚠️ Aucune prédiction disponible pour {name}")
-                
-                # Configuration finale du graphique
-                # Ligne verticale pour 2023
-                fig.add_vline(
-                    x='2023-01-01',
-                    line_dash="dot",
-                    line_color="gray",
-                    annotation_text="Début 2023",
-                    annotation_position="top"
-                )
-                
-                # Mise à jour du layout pour Streamlit
-                fig.update_layout(
-                    title={
-                        'text': "Comparaison des prédictions SARIMA 2023",
-                        'x': 0.5,
-                        'xanchor': 'center',
-                        'font': {'size': 16}
-                    },
-                    xaxis_title="Date",
-                    yaxis_title="Nombre d'accidents",
-                    hovermode='x unified',
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1,
-                        bgcolor="rgba(255,255,255,0.8)"
-                    ),
-                    height=600,
-                    margin=dict(l=50, r=50, t=80, b=50),
-                    plot_bgcolor='white',
-                    paper_bgcolor='white'
-                )
-                
-                # Configuration des axes pour Streamlit
-                fig.update_xaxes(
-                    showgrid=True,
-                    gridwidth=1,
-                    gridcolor='lightgray',
-                    showline=True,
-                    linewidth=2,
-                    linecolor='black'
-                )
-                fig.update_yaxes(
-                    showgrid=True,
-                    gridwidth=1,
-                    gridcolor='lightgray',
-                    showline=True,
-                    linewidth=2,
-                    linecolor='black'
-                )
-                
-                st.write("🔍 **Debug: Tentative d'affichage du graphique...**")
-                
-                # Debug détaillé de la condition
-                st.write(f"🔍 **Debug détaillé:**")
-                st.write(f"- fig is not None: {fig is not None}")
-                if fig is not None:
-                    st.write(f"- hasattr(fig, 'data'): {hasattr(fig, 'data')}")
-                    if hasattr(fig, 'data'):
-                        st.write(f"- len(fig.data): {len(fig.data)}")
-                        st.write(f"- fig.data: {fig.data}")
-                    else:
-                        st.write("- fig n'a pas d'attribut 'data'")
-                else:
-                    st.write("- fig est None")
-                
-                # Vérification que le graphique est valide
-                if fig is not None and hasattr(fig, 'data') and len(fig.data) > 0:
-                    st.write(f"✅ **Debug: Graphique valide avec {len(fig.data)} traces**")
-                    st.plotly_chart(fig, use_container_width=True, theme="streamlit")
-                    st.success("✅ Graphique affiché avec succès")
-                else:
-                    st.error("❌ Graphique invalide - impossible à afficher")
-                    st.write(f"Debug: fig={fig}, hasattr={hasattr(fig, 'data') if fig else 'N/A'}")
-                    
-                    # Affichage de secours - graphique simple
-                    st.write("🔄 **Tentative d'affichage de secours...**")
-                    try:
-                        import plotly.graph_objects as go
-                        fig_simple = go.Figure()
-                        fig_simple.add_trace(go.Scatter(
-                            x=hist_df['date'],
-                            y=hist_df['accidents'],
-                            mode='lines+markers',
-                            name='Données historiques',
-                            line=dict(color='blue', width=2)
-                        ))
-                        fig_simple.update_layout(
-                            title="Graphique de secours - Données historiques",
-                            xaxis_title="Date",
-                            yaxis_title="Nombre d'accidents"
-                        )
-                        st.plotly_chart(fig_simple, use_container_width=True)
-                        st.success("✅ Graphique de secours affiché")
-                    except Exception as e:
-                        st.error(f"❌ Impossible d'afficher même le graphique de secours: {str(e)}")
-            else:
-                st.error("Pas de données historiques disponibles")
-            
-            # Tableau des prédictions
-            st.subheader("📋 Prédictions mensuelles 2023")
-            
             comparison_data = {'Mois': [d.strftime('%Y-%m') for d in future_dates]}
+            
+            # Ajout des prédictions si elles existent
+            names = ['SARIMA standard', 'SARIMA + Météo', 'SARIMA sans COVID']
+            predictions = []
+            if 'pred1' in locals() and pred1 is not None:
+                predictions.append(pred1)
+            else:
+                predictions.append(None)
+                
+            if 'pred2' in locals() and pred2 is not None:
+                predictions.append(pred2)
+            else:
+                predictions.append(None)
+                
+            if 'pred3' in locals() and pred3 is not None:
+                predictions.append(pred3)
+            else:
+                predictions.append(None)
             
             for pred, name in zip(predictions, names):
                 if pred is not None:
                     comparison_data[name] = pred.round(1)
             
+            # Ajout des données réelles 2023 si disponibles
             if len(real_2023_df) > 0:
                 real_2023_monthly = real_2023_df.groupby(real_2023_df['date'].dt.to_period('M'))['accidents'].sum()
                 real_values = []
