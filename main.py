@@ -2336,9 +2336,14 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         annotation_position="top"
                     )
                     
-                    # Mise à jour du layout
+                    # Mise à jour du layout pour Streamlit
                     fig.update_layout(
-                        title="Comparaison des prédictions SARIMA 2023",
+                        title={
+                            'text': "Comparaison des prédictions SARIMA 2023",
+                            'x': 0.5,
+                            'xanchor': 'center',
+                            'font': {'size': 16}
+                        },
                         xaxis_title="Date",
                         yaxis_title="Nombre d'accidents",
                         hovermode='x unified',
@@ -2347,14 +2352,43 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             yanchor="bottom",
                             y=1.02,
                             xanchor="right",
-                            x=1
+                            x=1,
+                            bgcolor="rgba(255,255,255,0.8)"
                         ),
-                        height=600
+                        height=600,
+                        margin=dict(l=50, r=50, t=80, b=50),
+                        plot_bgcolor='white',
+                        paper_bgcolor='white'
+                    )
+                    
+                    # Configuration des axes pour Streamlit
+                    fig.update_xaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray',
+                        showline=True,
+                        linewidth=2,
+                        linecolor='black'
+                    )
+                    fig.update_yaxes(
+                        showgrid=True,
+                        gridwidth=1,
+                        gridcolor='lightgray',
+                        showline=True,
+                        linewidth=2,
+                        linecolor='black'
                     )
                     
                     st.write("🔍 **Debug: Tentative d'affichage du graphique...**")
-                    st.plotly_chart(fig, use_container_width=True)
-                    st.success("✅ Graphique affiché avec succès")
+                    
+                    # Vérification que le graphique est valide
+                    if fig is not None and hasattr(fig, 'data') and len(fig.data) > 0:
+                        st.write(f"✅ **Debug: Graphique valide avec {len(fig.data)} traces**")
+                        st.plotly_chart(fig, use_container_width=True, theme="streamlit")
+                        st.success("✅ Graphique affiché avec succès")
+                    else:
+                        st.error("❌ Graphique invalide - impossible à afficher")
+                        st.write(f"Debug: fig={fig}, hasattr={hasattr(fig, 'data') if fig else 'N/A'}")
                 else:
                     st.error("Impossible de créer le graphique - données insuffisantes")
                     st.write("Vérifiez que les données historiques sont bien chargées et que les prédictions sont valides.")
