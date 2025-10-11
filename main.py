@@ -5,6 +5,7 @@ from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import PCA
+from sklearn.metrics import mean_absolute_error, r2_score
 import numpy as np
 import ast
 import plotly.express as px
@@ -12,6 +13,7 @@ import re
 from collections import Counter
 import base64
 from pathlib import Path
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 # =========================
 # CONFIG APP
@@ -174,7 +176,9 @@ page = st.sidebar.radio(
 # =========================
 def safe_image(path: str, **kw):
     p = Path(path)
-    kw.setdefault("use_column_width", True)
+    if "use_column_width" in kw:
+        kw["use_container_width"] = kw.pop("use_column_width")
+    kw.setdefault("use_container_width", True)
     if p.exists():
         st.image(str(p), **kw)
     else:
@@ -634,7 +638,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         st.success("✅ Chargement complété.")
     
     # Afficher le graphique
-    st.plotly_chart(fig, use_column_width=True)
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown("""
         ---
         
@@ -2043,21 +2047,14 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             elif analysis_type == "Analyses et Prédictions":
                 st.header("Analyses et Prédictions des Accidents")
                 
-                description = "Le modèle XGBoost utilise les données historiques d'accidents (2017-2022), combinées avec les données météorologiques "
-                description += "(température, précipitations, neige, vent) et de trafic (débit et concentration) pour prédire le nombre quotidien "
-                description += "d'accidents en 2023. Le modèle apprend les patterns saisonniers et les corrélations entre ces différentes variables "
-                description += "pour générer des prédictions précises."
-                st.write(description)
-                
-                # Sélection du modèle
-                model_type = st.selectbox(
-                    "Sélectionner le type de modèle",
-                    ["XGBoost (Machine Learning)"]
+                st.write(
+                    "Cette section confronte deux approches complémentaires : un modèle XGBoost alimenté par les données "
+                    "météorologiques et de trafic, et un modèle de série temporelle SARIMA. Les deux prévisions sont "
+                    "calculées sur la même base quotidienne et comparées directement aux observations réelles."
                 )
-                
+
                 try:
                     with st.spinner("Calcul des prédictions en cours..."):
-                        # Chargement des données météo
                         @st.cache_data
                         def load_weather_data():
                             try:
@@ -2067,181 +2064,235 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             except Exception as e:
                                 st.error(f"Erreur lors du chargement des données météo : {str(e)}")
                                 return None
-                        
+
                         weather_df = load_weather_data()
                         if weather_df is None:
                             st.error("Impossible de charger les données météo")
                         else:
-                            # Préparation des données
-                            weather_df['date'] = pd.to_datetime(weather_df['date'])
                             df['date'] = pd.to_datetime(df['date_heure']).dt.normalize()
-                            
-                            # Chargement des données de trafic
+
                             try:
-                                traffic_df = pd.read_csv('trafic_routier_paris.csv')
+                                traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
+                                traffic_df = traffic_df.rename(
+                                    columns={
+                                        'q': 'trafic_debit',
+                                        'k': 'trafic_concentration'
+                                    }
+                                )
                                 traffic_df['date'] = pd.to_datetime(traffic_df['date'])
-                            except:
+                                numeric_cols = ['trafic_debit', 'trafic_concentration']
+                                for col in numeric_cols:
+                                    if col in traffic_df.columns:
+                                        traffic_df[col] = pd.to_numeric(traffic_df[col], errors='coerce')
+                            except Exception:
                                 traffic_df = None
-                            
-                            # Enrichissement des données
+
                             df_enriched = pd.merge(df, weather_df, on='date', how='left')
                             if traffic_df is not None:
                                 df_enriched = pd.merge(df_enriched, traffic_df, on='date', how='left')
-                            
-                            # Agrégation quotidienne
-                            daily_data = df_enriched.groupby('date').agg({
-                                'id_accident': 'count',
-                                'tavg': 'mean',
-                                'prcp': 'mean', 
-                                'snow': 'mean',
-                                'wspd': 'mean',
-                                'trafic_debit': 'mean',
-                                'trafic_concentration': 'mean'
-                            }).reset_index()
+
+                            agg_map = {'id_accident': 'count'}
+                            for optional_col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
+                                if optional_col in df_enriched.columns:
+                                    agg_map[optional_col] = 'mean'
+
+                            daily_data = df_enriched.groupby('date').agg(agg_map).reset_index()
                             daily_data.rename(columns={'id_accident': 'accidents'}, inplace=True)
-                            
-                            # Préparation des features temporelles
-                            def prepare_temporal_features(df):
-                                df = df.copy()
-                                df['year'] = df['date'].dt.year
-                                df['month'] = df['date'].dt.month
-                                df['day'] = df['date'].dt.day
-                                df['dayofweek'] = df['date'].dt.dayofweek
-                                df['quarter'] = df['date'].dt.quarter
-                                df['is_weekend'] = (df['dayofweek'] >= 5).astype(int)
-                                return df
-                            
+                            daily_data.sort_values('date', inplace=True)
+
+                            def prepare_temporal_features(df_features):
+                                df_features = df_features.copy()
+                                df_features['year'] = df_features['date'].dt.year
+                                df_features['month'] = df_features['date'].dt.month
+                                df_features['day'] = df_features['date'].dt.day
+                                df_features['dayofweek'] = df_features['date'].dt.dayofweek
+                                df_features['quarter'] = df_features['date'].dt.quarter
+                                df_features['is_weekend'] = (df_features['dayofweek'] >= 5).astype(int)
+                                return df_features
+
                             daily_data = prepare_temporal_features(daily_data)
-                            
-                            # Division des données
+
                             train_data = daily_data[daily_data['year'] <= 2021].copy()
                             test_data_2022 = daily_data[daily_data['year'] == 2022].copy()
                             test_data_2023 = daily_data[daily_data['year'] == 2023].copy()
-                            
-                            # Remplissage des valeurs manquantes
-                            for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
-                                if col in train_data.columns:
-                                    monthly_means = train_data.groupby(train_data['date'].dt.month)[col].mean()
-                                    test_data_2022[col] = test_data_2022['date'].dt.month.map(monthly_means)
-                                    test_data_2023[col] = test_data_2023['date'].dt.month.map(monthly_means)
-                                else:
-                                    monthly_means[col] = train_data.groupby(train_data['date'].dt.month)[col].mean()
-                                    test_data_2023[col] = 0.0
-                            
-                            # Entraînement du modèle XGBoost simplifié
-                            feature_columns = [
-                                'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration',
-                                'year', 'month', 'day', 'dayofweek', 'quarter', 'is_weekend'
-                            ]
-                            
-                            # Filtrage des colonnes existantes
-                            available_features = [col for col in feature_columns if col in train_data.columns]
-                            
-                            X_train = train_data[available_features].fillna(0)
-                            y_train = train_data['accidents']
-                            X_test_2022 = test_data_2022[available_features].fillna(0)
-                            X_test_2023 = test_data_2023[available_features].fillna(0)
-                            
-                            # Modèle XGBoost simplifié
-                            import xgboost as xgb
-                            model = xgb.XGBRegressor(
-                                n_estimators=100,
-                                learning_rate=0.1,
-                                max_depth=6,
-                                random_state=42
-                            )
-                            
-                            model.fit(X_train, y_train)
-                            
-                            # Prédictions
-                            predictions_2022 = model.predict(X_test_2022)
-                            predictions_2023 = model.predict(X_test_2023)
-                            
-                            # Métriques
-                            from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-                            import numpy as np
-                            
-                            mae_2022 = mean_absolute_error(test_data_2022['accidents'], predictions_2022)
-                            r2_2022 = r2_score(test_data_2022['accidents'], predictions_2022)
-                            
-                            # Affichage des métriques
-                            st.subheader("Performance du modèle sur l'année 2022")
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.metric("MAE", f"{mae_2022:.2f}")
-                            with col2:
-                                st.metric("R²", f"{r2_2022:.3f}")
-                            
-                            # Importance des features
-                            feature_importance = pd.DataFrame({
-                                'feature': available_features,
-                                'importance': model.feature_importances_
-                            }).sort_values('importance', ascending=False)
-                            
-                            st.subheader("Importance des variables")
-                            fig_importance = px.bar(
-                                feature_importance.head(10),
-                                x='importance',
-                                y='feature',
-                                orientation='h',
-                                title="Top 10 des variables les plus importantes"
-                            )
-                            st.plotly_chart(fig_importance, use_container_width=True)
-                            
-                            # Graphique des prédictions
-                            fig = go.Figure()
-                            
-                            # Données historiques
-                            fig.add_trace(go.Scatter(
-                                x=train_data['date'],
-                                y=train_data['accidents'],
-                                name='Données historiques (2017-2021)',
-                                line=dict(color='blue')
-                            ))
-                            
-                            # Données réelles 2022
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2022['date'],
-                                y=test_data_2022['accidents'],
-                                name='Données réelles 2022',
-                                line=dict(color='green')
-                            ))
-                            
-                            # Prédictions 2022
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2022['date'],
-                                y=predictions_2022,
-                                name='Prédictions 2022',
-                                line=dict(color='orange', dash='dash')
-                            ))
-                            
-                            # Prédictions 2023
-                            fig.add_trace(go.Scatter(
-                                x=test_data_2023['date'],
-                                y=predictions_2023,
-                                name='Prédictions 2023',
-                                line=dict(color='red', dash='dash')
-                            ))
-                            
-                            fig.update_layout(
-                                title="Évolution du nombre d'accidents quotidiens et prédictions (XGBoost)",
-                                xaxis_title="Date",
-                                yaxis_title="Nombre d'accidents",
-                                height=500
-                            )
-                            
-                            st.plotly_chart(fig, use_container_width=True)
-                            
-                            # Statistiques des prédictions
-                            st.subheader("Statistiques des prédictions 2023")
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric("Moyenne prédite", f"{predictions_2023.mean():.1f}")
-                            with col2:
-                                st.metric("Maximum prédit", f"{predictions_2023.max():.1f}")
-                            with col3:
-                                st.metric("Minimum prédit", f"{predictions_2023.min():.1f}")
-                
+
+                            xgb_predictions_2022 = pd.Series(dtype=float)
+                            xgb_predictions_2023 = pd.Series(dtype=float)
+                            sarima_predictions_2022 = pd.Series(dtype=float)
+                            sarima_predictions_2023 = pd.Series(dtype=float)
+                            xgb_metrics = {}
+                            sarima_metrics = {}
+                            feature_importance = None
+
+                            try:
+                                for col in ['tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration']:
+                                    if col in train_data.columns:
+                                        monthly_means = train_data.groupby(train_data['date'].dt.month)[col].mean()
+                                        if col in test_data_2022.columns:
+                                            test_data_2022.loc[:, col] = test_data_2022['date'].dt.month.map(monthly_means)
+                                        if col in test_data_2023.columns:
+                                            test_data_2023.loc[:, col] = test_data_2023['date'].dt.month.map(monthly_means)
+
+                                feature_columns = [
+                                    'tavg', 'prcp', 'snow', 'wspd', 'trafic_debit', 'trafic_concentration',
+                                    'year', 'month', 'day', 'dayofweek', 'quarter', 'is_weekend'
+                                ]
+
+                                available_features = [col for col in feature_columns if col in train_data.columns]
+
+                                X_train = train_data[available_features].fillna(0)
+                                y_train = train_data['accidents']
+                                X_test_2022 = test_data_2022[available_features].fillna(0)
+                                X_test_2023 = test_data_2023[available_features].fillna(0)
+
+                                import xgboost as xgb
+
+                                model = xgb.XGBRegressor(
+                                    n_estimators=100,
+                                    learning_rate=0.1,
+                                    max_depth=6,
+                                    random_state=42
+                                )
+                                model.fit(X_train, y_train)
+
+                                xgb_predictions_2022 = pd.Series(model.predict(X_test_2022), index=test_data_2022['date'])
+                                xgb_predictions_2023 = pd.Series(model.predict(X_test_2023), index=test_data_2023['date'])
+
+                                xgb_metrics['mae'] = mean_absolute_error(test_data_2022['accidents'], xgb_predictions_2022)
+                                xgb_metrics['r2'] = r2_score(test_data_2022['accidents'], xgb_predictions_2022)
+
+                                feature_importance = pd.DataFrame({
+                                    'feature': available_features,
+                                    'importance': model.feature_importances_
+                                }).sort_values('importance', ascending=False)
+                            except Exception as model_error:
+                                st.warning(f"XGBoost indisponible : {model_error}")
+
+                            try:
+                                ts_full = daily_data[['date', 'accidents']].set_index('date').asfreq('D')
+                                ts_full['accidents'] = ts_full['accidents'].fillna(method='ffill').fillna(method='bfill')
+
+                                train_ts = ts_full[ts_full.index.year <= 2021]
+                                val_ts = ts_full[ts_full.index.year == 2022]
+
+                                sarima_model = SARIMAX(
+                                    train_ts['accidents'],
+                                    order=(1, 1, 1),
+                                    seasonal_order=(1, 1, 1, 7),
+                                    enforce_stationarity=False,
+                                    enforce_invertibility=False
+                                )
+                                sarima_fit = sarima_model.fit(disp=False)
+
+                                sarima_forecast_2022 = sarima_fit.get_forecast(steps=len(val_ts))
+                                sarima_predictions_2022 = sarima_forecast_2022.predicted_mean
+                                if len(sarima_predictions_2022) > 0:
+                                    sarima_predictions_2022.index = val_ts.index[:len(sarima_predictions_2022)]
+
+                                sarima_metrics['mae'] = mean_absolute_error(val_ts['accidents'], sarima_predictions_2022)
+                                sarima_metrics['r2'] = r2_score(val_ts['accidents'], sarima_predictions_2022)
+
+                                ts_train_full = ts_full[ts_full.index.year <= 2022]
+                                sarima_full = SARIMAX(
+                                    ts_train_full['accidents'],
+                                    order=(1, 1, 1),
+                                    seasonal_order=(1, 1, 1, 7),
+                                    enforce_stationarity=False,
+                                    enforce_invertibility=False
+                                ).fit(disp=False)
+
+                                horizon_2023 = (ts_full.index.year == 2023).sum()
+                                sarima_forecast_2023 = sarima_full.get_forecast(steps=horizon_2023)
+                                sarima_predictions_2023 = sarima_forecast_2023.predicted_mean
+                                if len(sarima_predictions_2023) > 0:
+                                    sarima_predictions_2023.index = ts_full[ts_full.index.year == 2023].index[:len(sarima_predictions_2023)]
+                            except Exception as sarima_error:
+                                st.warning(f"SARIMA indisponible : {sarima_error}")
+
+                            if not xgb_metrics and not sarima_metrics:
+                                st.error("Aucun modèle n'a pu être entraîné. Vérifiez les dépendances et les fichiers de données.")
+                            else:
+                                st.subheader("Performance des modèles sur 2022")
+                                col_xgb, col_sarima = st.columns(2)
+                                with col_xgb:
+                                    st.markdown("**XGBoost**")
+                                    if xgb_metrics:
+                                        st.metric("MAE", f"{xgb_metrics['mae']:.2f}")
+                                        st.metric("R²", f"{xgb_metrics['r2']:.3f}")
+                                    else:
+                                        st.info("Indisponible")
+                                with col_sarima:
+                                    st.markdown("**SARIMA**")
+                                    if sarima_metrics:
+                                        st.metric("MAE", f"{sarima_metrics['mae']:.2f}")
+                                        st.metric("R²", f"{sarima_metrics['r2']:.3f}")
+                                    else:
+                                        st.info("Indisponible")
+
+                                if feature_importance is not None and not feature_importance.empty:
+                                    st.subheader("Importance des variables (XGBoost)")
+                                    fig_importance = px.bar(
+                                        feature_importance.head(10),
+                                        x='importance',
+                                        y='feature',
+                                        orientation='h',
+                                        title="Top 10 des variables les plus importantes"
+                                    )
+                                    st.plotly_chart(fig_importance, use_container_width=True)
+
+                                fig = go.Figure()
+                                fig.add_trace(go.Scatter(
+                                    x=daily_data['date'],
+                                    y=daily_data['accidents'],
+                                    name='Données réelles (2017-2023)',
+                                    line=dict(color='blue')
+                                ))
+
+                                if not xgb_predictions_2023.empty:
+                                    fig.add_trace(go.Scatter(
+                                        x=xgb_predictions_2023.index,
+                                        y=xgb_predictions_2023,
+                                        name='Prédiction 2023 — XGBoost',
+                                        line=dict(color='red', dash='dash')
+                                    ))
+
+                                if not sarima_predictions_2023.empty:
+                                    fig.add_trace(go.Scatter(
+                                        x=sarima_predictions_2023.index,
+                                        y=sarima_predictions_2023,
+                                        name='Prédiction 2023 — SARIMA',
+                                        line=dict(color='green', dash='dot')
+                                    ))
+
+                                fig.update_layout(
+                                    title="Comparaison des prévisions 2023 et des données réelles",
+                                    xaxis_title="Date",
+                                    yaxis_title="Nombre d'accidents",
+                                    height=500
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+
+                                st.subheader("Statistiques des prédictions 2023")
+                                col_pred_xgb, col_pred_sarima = st.columns(2)
+
+                                with col_pred_xgb:
+                                    st.markdown("**XGBoost**")
+                                    if not xgb_predictions_2023.empty:
+                                        st.metric("Moyenne", f"{xgb_predictions_2023.mean():.1f}")
+                                        st.metric("Maximum", f"{xgb_predictions_2023.max():.1f}")
+                                        st.metric("Minimum", f"{xgb_predictions_2023.min():.1f}")
+                                    else:
+                                        st.info("Pas de prédictions disponibles")
+
+                                with col_pred_sarima:
+                                    st.markdown("**SARIMA**")
+                                    if not sarima_predictions_2023.empty:
+                                        st.metric("Moyenne", f"{sarima_predictions_2023.mean():.1f}")
+                                        st.metric("Maximum", f"{sarima_predictions_2023.max():.1f}")
+                                        st.metric("Minimum", f"{sarima_predictions_2023.min():.1f}")
+                                    else:
+                                        st.info("Pas de prédictions disponibles")
+
                 except Exception as e:
                     st.error(f"Erreur lors du calcul des prédictions : {str(e)}")
                     st.info("Note : Les prédictions nécessitent les données météorologiques et de trafic. Vérifiez que les fichiers 'data_meteo.csv' et 'trafic_routier_paris.csv' sont présents.")
