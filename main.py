@@ -2144,6 +2144,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 import warnings
                 warnings.filterwarnings('ignore')
                 
+                st.write("🔍 Débogage: Import des librairies réussi")
+                
                 # Paramètres SARIMA
                 p, d, q = 1, 1, 1
                 P, D, Q, s = 1, 1, 1, 12
@@ -2153,6 +2155,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 ts_clean = ts_data.dropna()
                 last_date = ts_clean.index[-1]
                 future_dates = pd.date_range(start=last_date, periods=periods+1, freq='MS')[1:]
+                
+                st.write("🔍 Débogage: Préparation des données terminée")
                 
                 # Modèle 1: SARIMA standard
                 st.subheader("📊 Modèle 1: SARIMA sans données météo")
@@ -2220,6 +2224,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 # Graphique comparatif
                 st.subheader("📊 Comparaison des prédictions 2023")
+                st.write("🔍 Débogage: Début de la création du graphique")
                 
                 # Données historiques
                 hist_df = ts_clean.reset_index()
@@ -2256,6 +2261,10 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 for i, (pred, name) in enumerate(zip(predictions, names)):
                     if pred is not None:
+                        # Vérification des types
+                        st.write(f"🔍 Débogage: Prédiction {i+1} - type: {type(pred)}, shape: {pred.shape if hasattr(pred, 'shape') else 'N/A'}")
+                        st.write(f"🔍 Débogage: future_dates - type: {type(future_dates)}, len: {len(future_dates)}")
+                        
                         pred_df = pd.DataFrame({
                             'date': future_dates,
                             'accidents': pred
@@ -2321,15 +2330,26 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 if len(real_2023_df) > 0 and any(pred is not None for pred in predictions):
                     st.subheader("📊 Analyse des erreurs de prédiction")
                     
-                    real_2023_monthly = real_2023_df.groupby(real_2023_df['date'].dt.to_period('M'))['accidents'].sum()
-                    real_avg = float(real_2023_monthly.mean())
+                    try:
+                        real_2023_monthly = real_2023_df.groupby(real_2023_df['date'].dt.to_period('M'))['accidents'].sum()
+                        if len(real_2023_monthly) > 0:
+                            real_avg = float(real_2023_monthly.mean())
+                        else:
+                            st.warning("Pas de données réelles 2023 disponibles pour la comparaison")
+                            real_avg = 0
+                    except Exception as e:
+                        st.warning(f"Erreur lors du calcul des données réelles 2023: {str(e)}")
+                        real_avg = 0
                     
                     error_data = []
                     for pred, name in zip(predictions, names):
                         if pred is not None:
                             pred_avg = float(np.mean(pred))
                             mae = abs(real_avg - pred_avg)
-                            mape = (mae / real_avg) * 100
+                            if real_avg > 0:
+                                mape = (mae / real_avg) * 100
+                            else:
+                                mape = 0
                             error_data.append({
                                 'Modèle': name,
                                 'MAE': f"{mae:.1f}",
