@@ -2160,7 +2160,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     model1 = SARIMAX(ts_clean['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
                     fitted1 = model1.fit(disp=False)
                     forecast1 = fitted1.get_forecast(steps=periods)
-                    pred1 = forecast1.predicted_mean
+                    pred1 = forecast1.predicted_mean.values
                     st.success("✅ Modèle 1 entraîné avec succès")
                 except Exception as e:
                     st.error(f"❌ Erreur Modèle 1: {str(e)}")
@@ -2189,7 +2189,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                                 index=future_dates
                             )
                             forecast2 = fitted2.get_forecast(steps=periods, exog=future_weather)
-                            pred2 = forecast2.predicted_mean
+                            pred2 = forecast2.predicted_mean.values
                             st.success("✅ Modèle 2 entraîné avec succès")
                         else:
                             st.warning("Pas assez de données météo - utilisation du modèle standard")
@@ -2209,7 +2209,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         model3 = SARIMAX(ts_no_covid['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
                         fitted3 = model3.fit(disp=False)
                         forecast3 = fitted3.get_forecast(steps=periods)
-                        pred3 = forecast3.predicted_mean
+                        pred3 = forecast3.predicted_mean.values
                         st.success("✅ Modèle 3 entraîné avec succès")
                     else:
                         st.warning("Pas assez de données sans COVID - utilisation du modèle standard")
@@ -2258,7 +2258,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     if pred is not None:
                         pred_df = pd.DataFrame({
                             'date': future_dates,
-                            'accidents': pred.values
+                            'accidents': pred
                         })
                         
                         fig.add_scatter(
@@ -2301,7 +2301,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 for pred, name in zip(predictions, names):
                     if pred is not None:
-                        comparison_data[name] = pred.values.round(1)
+                        comparison_data[name] = pred.round(1)
                 
                 if len(real_2023_df) > 0:
                     real_2023_monthly = real_2023_df.groupby(real_2023_df['date'].dt.to_period('M'))['accidents'].sum()
@@ -2327,7 +2327,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     error_data = []
                     for pred, name in zip(predictions, names):
                         if pred is not None:
-                            pred_avg = float(pred.mean())
+                            pred_avg = float(np.mean(pred))
                             mae = abs(real_avg - pred_avg)
                             mape = (mae / real_avg) * 100
                             error_data.append({
