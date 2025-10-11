@@ -2263,6 +2263,47 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             if len(hist_df) > 0:
                 import plotly.graph_objects as go
                 
+                # GRAPHIQUE 1: Données historiques uniquement
+                st.subheader("📊 Graphique 1: Données historiques (2017-2022)")
+                fig_hist = go.Figure()
+                fig_hist.add_trace(go.Scatter(
+                    x=hist_df['date'],
+                    y=hist_df['accidents'],
+                    mode='lines+markers',
+                    name='Données historiques',
+                    line=dict(color='blue', width=2),
+                    marker=dict(size=4)
+                ))
+                fig_hist.update_layout(
+                    title="Données historiques des accidents (2017-2022)",
+                    xaxis_title="Date",
+                    yaxis_title="Nombre d'accidents",
+                    height=400
+                )
+                st.plotly_chart(fig_hist, use_container_width=True)
+                
+                # GRAPHIQUE 2: Données 2023 uniquement
+                if len(real_2023_df) > 0:
+                    st.subheader("📊 Graphique 2: Données réelles 2023")
+                    fig_2023 = go.Figure()
+                    fig_2023.add_trace(go.Scatter(
+                        x=real_2023_df['date'],
+                        y=real_2023_df['accidents'],
+                        mode='lines+markers',
+                        name='Données réelles 2023',
+                        line=dict(color='green', width=3),
+                        marker=dict(size=6)
+                    ))
+                    fig_2023.update_layout(
+                        title="Données réelles 2023",
+                        xaxis_title="Date",
+                        yaxis_title="Nombre d'accidents",
+                        height=400
+                    )
+                    st.plotly_chart(fig_2023, use_container_width=True)
+                
+                # GRAPHIQUE PRINCIPAL: Tous les éléments combinés
+                st.subheader("📊 Graphique principal: Comparaison complète")
                 fig = go.Figure()
                 
                 # Ajout des données historiques
@@ -2314,14 +2355,33 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     else:
                         st.write(f"- {name}: Aucune prédiction disponible")
                 
-                # Ajout des prédictions au graphique
+                # GRAPHIQUES SÉPARÉS POUR CHAQUE PRÉDICTION
                 for i, (pred, name) in enumerate(zip(predictions, names)):
                     if pred is not None and len(pred) > 0:
+                        st.subheader(f"📊 Graphique {i+3}: Prédictions {name}")
                         pred_df = pd.DataFrame({
                             'date': future_dates,
                             'accidents': pred
                         })
                         
+                        fig_pred = go.Figure()
+                        fig_pred.add_trace(go.Scatter(
+                            x=pred_df['date'],
+                            y=pred_df['accidents'],
+                            mode='lines+markers',
+                            name=f'Prédictions {name}',
+                            line=dict(color=colors[i], width=3),
+                            marker=dict(size=6)
+                        ))
+                        fig_pred.update_layout(
+                            title=f"Prédictions {name} pour 2023",
+                            xaxis_title="Date",
+                            yaxis_title="Nombre d'accidents",
+                            height=400
+                        )
+                        st.plotly_chart(fig_pred, use_container_width=True)
+                        
+                        # Ajout au graphique principal
                         fig.add_trace(go.Scatter(
                             x=pred_df['date'],
                             y=pred_df['accidents'],
@@ -2330,6 +2390,8 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             line=dict(color=colors[i], dash='dash', width=2),
                             marker=dict(size=4)
                         ))
+                    else:
+                        st.warning(f"⚠️ Aucune prédiction disponible pour {name}")
                 
                 # Configuration finale du graphique
                 # Ligne verticale pour 2023
@@ -2386,6 +2448,19 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 st.write("🔍 **Debug: Tentative d'affichage du graphique...**")
                 
+                # Debug détaillé de la condition
+                st.write(f"🔍 **Debug détaillé:**")
+                st.write(f"- fig is not None: {fig is not None}")
+                if fig is not None:
+                    st.write(f"- hasattr(fig, 'data'): {hasattr(fig, 'data')}")
+                    if hasattr(fig, 'data'):
+                        st.write(f"- len(fig.data): {len(fig.data)}")
+                        st.write(f"- fig.data: {fig.data}")
+                    else:
+                        st.write("- fig n'a pas d'attribut 'data'")
+                else:
+                    st.write("- fig est None")
+                
                 # Vérification que le graphique est valide
                 if fig is not None and hasattr(fig, 'data') and len(fig.data) > 0:
                     st.write(f"✅ **Debug: Graphique valide avec {len(fig.data)} traces**")
@@ -2394,6 +2469,28 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 else:
                     st.error("❌ Graphique invalide - impossible à afficher")
                     st.write(f"Debug: fig={fig}, hasattr={hasattr(fig, 'data') if fig else 'N/A'}")
+                    
+                    # Affichage de secours - graphique simple
+                    st.write("🔄 **Tentative d'affichage de secours...**")
+                    try:
+                        import plotly.graph_objects as go
+                        fig_simple = go.Figure()
+                        fig_simple.add_trace(go.Scatter(
+                            x=hist_df['date'],
+                            y=hist_df['accidents'],
+                            mode='lines+markers',
+                            name='Données historiques',
+                            line=dict(color='blue', width=2)
+                        ))
+                        fig_simple.update_layout(
+                            title="Graphique de secours - Données historiques",
+                            xaxis_title="Date",
+                            yaxis_title="Nombre d'accidents"
+                        )
+                        st.plotly_chart(fig_simple, use_container_width=True)
+                        st.success("✅ Graphique de secours affiché")
+                    except Exception as e:
+                        st.error(f"❌ Impossible d'afficher même le graphique de secours: {str(e)}")
             else:
                 st.error("Pas de données historiques disponibles")
             
