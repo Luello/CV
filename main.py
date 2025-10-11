@@ -2234,17 +2234,24 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 real_2023_df = ts_clean.reset_index()
                 real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
                 
+                st.write(f"🔍 Débogage: hist_df shape: {hist_df.shape}")
+                st.write(f"🔍 Débogage: real_2023_df shape: {real_2023_df.shape}")
+                
                 # Création du graphique
-                fig = px.line(
-                    hist_df,
-                    x='date',
-                    y='accidents',
-                    title="Comparaison des prédictions SARIMA 2023",
-                    labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'}
-                )
+                if len(hist_df) > 0:
+                    fig = px.line(
+                        hist_df,
+                        x='date',
+                        y='accidents',
+                        title="Comparaison des prédictions SARIMA 2023",
+                        labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'}
+                    )
+                else:
+                    st.error("Pas de données historiques disponibles")
+                    fig = None
                 
                 # Ajout des données réelles 2023
-                if len(real_2023_df) > 0:
+                if fig is not None and len(real_2023_df) > 0:
                     fig.add_scatter(
                         x=real_2023_df['date'],
                         y=real_2023_df['accidents'],
@@ -2260,7 +2267,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 predictions = [pred1, pred2, pred3]
                 
                 for i, (pred, name) in enumerate(zip(predictions, names)):
-                    if pred is not None:
+                    if pred is not None and fig is not None:
                         # Vérification des types
                         st.write(f"🔍 Débogage: Prédiction {i+1} - type: {type(pred)}, shape: {pred.shape if hasattr(pred, 'shape') else 'N/A'}")
                         st.write(f"🔍 Débogage: future_dates - type: {type(future_dates)}, len: {len(future_dates)}")
@@ -2280,28 +2287,31 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         )
                 
                 # Ligne verticale pour 2023
-                fig.add_vline(
-                    x='2023-01-01',
-                    line_dash="dot",
-                    line_color="gray",
-                    annotation_text="Début 2023",
-                    annotation_position="top"
-                )
-                
-                fig.update_layout(
-                    xaxis_title="Date",
-                    yaxis_title="Nombre d'accidents",
-                    hovermode='x unified',
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
+                if fig is not None:
+                    fig.add_vline(
+                        x='2023-01-01',
+                        line_dash="dot",
+                        line_color="gray",
+                        annotation_text="Début 2023",
+                        annotation_position="top"
                     )
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
+                    
+                    fig.update_layout(
+                        xaxis_title="Date",
+                        yaxis_title="Nombre d'accidents",
+                        hovermode='x unified',
+                        legend=dict(
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="right",
+                            x=1
+                        )
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.error("Impossible de créer le graphique - données insuffisantes")
                 
                 # Tableau des prédictions
                 st.subheader("📋 Prédictions mensuelles 2023")
