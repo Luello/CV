@@ -2151,6 +2151,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 try:
                     from statsmodels.tsa.statespace.sarimax import SARIMAX
                     from statsmodels.tsa.seasonal import seasonal_decompose
+                    import numpy as np
                     import warnings
                     warnings.filterwarnings('ignore')
                     
@@ -2163,8 +2164,11 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             df_meteo = df_meteo.set_index('date')
                             # Agrégation mensuelle des données météo
                             weather_monthly = df_meteo.resample('M').mean()
+                            # Nettoyage des données
+                            weather_monthly = weather_monthly.dropna()
                             return weather_monthly
-                        except:
+                        except Exception as e:
+                            st.warning(f"Erreur lors du chargement des données météo: {str(e)}")
                             return None
                     
                     weather_data = load_weather_data()
@@ -2190,9 +2194,19 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         
                         # Prédictions
                         if exog is not None and weather_data is not None:
-                            # Prédictions avec variables exogènes
-                            future_weather = weather_data.loc[future_dates, ['tavg', 'prcp', 'wspd']].ffill()
-                            forecast = fitted_model.get_forecast(steps=periods, exog=future_weather)
+                            try:
+                                # Prédictions avec variables exogènes
+                                # Utiliser les dernières valeurs météo disponibles pour les prédictions
+                                last_weather = weather_data[['tavg', 'prcp', 'wspd']].iloc[-1:].values
+                                future_weather = pd.DataFrame(
+                                    np.tile(last_weather, (periods, 1)),
+                                    columns=['tavg', 'prcp', 'wspd'],
+                                    index=future_dates
+                                )
+                                forecast = fitted_model.get_forecast(steps=periods, exog=future_weather)
+                            except Exception as e:
+                                # En cas d'erreur, faire des prédictions sans variables exogènes
+                                forecast = fitted_model.get_forecast(steps=periods)
                         else:
                             # Prédictions sans variables exogènes
                             forecast = fitted_model.get_forecast(steps=periods)
@@ -2209,30 +2223,63 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     
                     # 1. SARIMA sans données météo
                     st.subheader("📊 Modèle 1: SARIMA sans données météo")
-                    model1 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard")
+                    try:
+                        model1 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard")
+                        st.success("✅ Modèle 1 entraîné avec succès")
+                    except Exception as e:
+                        st.error(f"❌ Erreur Modèle 1: {str(e)}")
+                        model1 = None
                     
                     # 2. SARIMA avec données météo
                     st.subheader("📊 Modèle 2: SARIMA avec données météo")
-                    if weather_data is not None:
-                        # Préparation des variables exogènes météo
-                        weather_vars = weather_data[['tavg', 'prcp', 'wspd']].ffill()
-                        # Alignement des dates
-                        common_dates = ts_clean.index.intersection(weather_vars.index)
-                        ts_weather = ts_clean.loc[common_dates]
-                        weather_common = weather_vars.loc[common_dates]
-                        
-                        model2 = create_sarima_model(ts_weather['accidents'], exog=weather_common, name="SARIMA + Météo")
+                    if weather_data is not None and len(weather_data) > 0:
+                        try:
+                            # Préparation des variables exogènes météo
+                            weather_vars = weather_data[['tavg', 'prcp', 'wspd']].ffill()
+                            
+                            # Alignement des dates - s'assurer qu'il y a des dates communes
+                            common_dates = ts_clean.index.intersection(weather_vars.index)
+                            
+                            if len(common_dates) > 12:  # Au moins 12 mois de données communes
+                                ts_weather = ts_clean.loc[common_dates]
+                                weather_common = weather_vars.loc[common_dates]
+                                
+                                # Vérifier qu'il n'y a pas de valeurs manquantes
+                                if not weather_common.isnull().any().any() and not ts_weather['accidents'].isnull().any():
+                                    model2 = create_sarima_model(ts_weather['accidents'], exog=weather_common, name="SARIMA + Météo")
+                                else:
+                                    st.warning("Données météo incomplètes - passage au modèle standard")
+                                    model2 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard (météo indisponible)")
+                            else:
+                                st.warning("Pas assez de données météo communes - passage au modèle standard")
+                                model2 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard (météo indisponible)")
+                        except Exception as e:
+                            st.warning(f"Erreur avec les données météo: {str(e)} - passage au modèle standard")
+                            model2 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard (météo indisponible)")
                     else:
-                        st.warning("Données météo non disponibles")
-                        model2 = None
+                        st.warning("Données météo non disponibles - passage au modèle standard")
+                        model2 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard (météo indisponible)")
                     
                     # 3. SARIMA sans année COVID (2020)
                     st.subheader("📊 Modèle 3: SARIMA sans année COVID (2020)")
-                    ts_no_covid = ts_clean[~((ts_clean.index >= '2020-01-01') & (ts_clean.index < '2021-01-01'))]
-                    model3 = create_sarima_model(ts_no_covid['accidents'], name="SARIMA sans COVID")
+                    try:
+                        ts_no_covid = ts_clean[~((ts_clean.index >= '2020-01-01') & (ts_clean.index < '2021-01-01'))]
+                        if len(ts_no_covid) > 12:  # Vérifier qu'il y a assez de données
+                            model3 = create_sarima_model(ts_no_covid['accidents'], name="SARIMA sans COVID")
+                            st.success("✅ Modèle 3 entraîné avec succès")
+                        else:
+                            st.warning("Pas assez de données sans COVID - utilisation du modèle standard")
+                            model3 = create_sarima_model(ts_clean['accidents'], name="SARIMA standard (COVID inclus)")
+                    except Exception as e:
+                        st.error(f"❌ Erreur Modèle 3: {str(e)}")
+                        model3 = None
                     
                     # Affichage des résultats
-                    st.success("✅ Tous les modèles SARIMA ont été entraînés avec succès!")
+                    working_models = [m for m in [model1, model2, model3] if m is not None]
+                    if working_models:
+                        st.success(f"✅ {len(working_models)} modèle(s) SARIMA entraîné(s) avec succès!")
+                    else:
+                        st.error("❌ Aucun modèle SARIMA n'a pu être entraîné")
                     
                     # Métriques comparatives
                     st.subheader("📈 Comparaison des performances des modèles")
@@ -2267,84 +2314,87 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         st.dataframe(df_models, use_container_width=True)
                     
                     # Graphiques comparatifs
-                    st.subheader("📊 Comparaison des prédictions 2023")
-                    
-                    # Données historiques (2017-2022)
-                    hist_df = ts_clean.reset_index()
-                    hist_df = hist_df[hist_df['date'] < '2023-01-01']
-                    hist_df['type'] = 'Données historiques (2017-2022)'
-                    
-                    # Données réelles 2023 si disponibles
-                    real_2023_df = ts_clean.reset_index()
-                    real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
-                    if len(real_2023_df) > 0:
-                        real_2023_df['type'] = 'Données réelles 2023'
-                    
-                    # Création du graphique principal
-                    fig_comparison = px.line(
-                        hist_df,
-                        x='date',
-                        y='accidents',
-                        title="Comparaison des prédictions SARIMA 2023",
-                        labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'},
-                        color_discrete_map={'Données historiques (2017-2022)': 'blue'}
-                    )
-                    
-                    # Ajout des données réelles 2023
-                    if len(real_2023_df) > 0:
-                        fig_comparison.add_scatter(
-                            x=real_2023_df['date'],
-                            y=real_2023_df['accidents'],
-                            mode='lines+markers',
-                            name='Données réelles 2023',
-                            line=dict(color='green', width=3),
-                            marker=dict(size=6)
+                    if working_models:
+                        st.subheader("📊 Comparaison des prédictions 2023")
+                        
+                        # Données historiques (2017-2022)
+                        hist_df = ts_clean.reset_index()
+                        hist_df = hist_df[hist_df['date'] < '2023-01-01']
+                        hist_df['type'] = 'Données historiques (2017-2022)'
+                        
+                        # Données réelles 2023 si disponibles
+                        real_2023_df = ts_clean.reset_index()
+                        real_2023_df = real_2023_df[real_2023_df['date'] >= '2023-01-01']
+                        if len(real_2023_df) > 0:
+                            real_2023_df['type'] = 'Données réelles 2023'
+                        
+                        # Création du graphique principal
+                        fig_comparison = px.line(
+                            hist_df,
+                            x='date',
+                            y='accidents',
+                            title="Comparaison des prédictions SARIMA 2023",
+                            labels={'date': 'Date', 'accidents': 'Nombre d\'accidents'},
+                            color_discrete_map={'Données historiques (2017-2022)': 'blue'}
                         )
-                    
-                    # Couleurs pour les prédictions
-                    colors = ['red', 'orange', 'purple']
-                    models = [model1, model2, model3]
-                    model_names = ['SARIMA standard', 'SARIMA + Météo', 'SARIMA sans COVID']
-                    
-                    for i, (model, name) in enumerate(zip(models, model_names)):
-                        if model:
-                            pred_df = pd.DataFrame({
-                                'date': future_dates,
-                                'accidents': model['predictions'].values
-                            })
-                            
+                        
+                        # Ajout des données réelles 2023
+                        if len(real_2023_df) > 0:
                             fig_comparison.add_scatter(
-                                x=pred_df['date'],
-                                y=pred_df['accidents'],
+                                x=real_2023_df['date'],
+                                y=real_2023_df['accidents'],
                                 mode='lines+markers',
-                                name=f'Prédictions {name}',
-                                line=dict(color=colors[i], dash='dash', width=2),
-                                marker=dict(size=4)
+                                name='Données réelles 2023',
+                                line=dict(color='green', width=3),
+                                marker=dict(size=6)
                             )
-                    
-                    # Ligne verticale pour séparer 2022 et 2023
-                    fig_comparison.add_vline(
-                        x='2023-01-01',
-                        line_dash="dot",
-                        line_color="gray",
-                        annotation_text="Début 2023",
-                        annotation_position="top"
-                    )
-                    
-                    fig_comparison.update_layout(
-                        xaxis_title="Date",
-                        yaxis_title="Nombre d'accidents",
-                        hovermode='x unified',
-                        legend=dict(
-                            orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
-                            xanchor="right",
-                            x=1
+                        
+                        # Couleurs pour les prédictions
+                        colors = ['red', 'orange', 'purple']
+                        models = [model1, model2, model3]
+                        model_names = ['SARIMA standard', 'SARIMA + Météo', 'SARIMA sans COVID']
+                        
+                        for i, (model, name) in enumerate(zip(models, model_names)):
+                            if model:
+                                pred_df = pd.DataFrame({
+                                    'date': future_dates,
+                                    'accidents': model['predictions'].values
+                                })
+                                
+                                fig_comparison.add_scatter(
+                                    x=pred_df['date'],
+                                    y=pred_df['accidents'],
+                                    mode='lines+markers',
+                                    name=f'Prédictions {name}',
+                                    line=dict(color=colors[i], dash='dash', width=2),
+                                    marker=dict(size=4)
+                                )
+                        
+                        # Ligne verticale pour séparer 2022 et 2023
+                        fig_comparison.add_vline(
+                            x='2023-01-01',
+                            line_dash="dot",
+                            line_color="gray",
+                            annotation_text="Début 2023",
+                            annotation_position="top"
                         )
-                    )
-                    
-                    st.plotly_chart(fig_comparison, use_container_width=True)
+                        
+                        fig_comparison.update_layout(
+                            xaxis_title="Date",
+                            yaxis_title="Nombre d'accidents",
+                            hovermode='x unified',
+                            legend=dict(
+                                orientation="h",
+                                yanchor="bottom",
+                                y=1.02,
+                                xanchor="right",
+                                x=1
+                            )
+                        )
+                        
+                        st.plotly_chart(fig_comparison, use_container_width=True)
+                    else:
+                        st.error("❌ Impossible d'afficher les graphiques - aucun modèle fonctionnel")
                     
                     # Tableau comparatif des prédictions
                     st.subheader("📋 Comparaison des prédictions mensuelles 2023")
