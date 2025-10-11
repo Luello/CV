@@ -2312,7 +2312,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 # Tableau des prédictions
                 st.subheader("📋 Prédictions mensuelles 2023")
                 
-                comparison_data = {'Mois': future_dates.strftime('%Y-%m')}
+                comparison_data = {'Mois': [d.strftime('%Y-%m') for d in future_dates]}
                 
                 for pred, name in zip(predictions, names):
                     if pred is not None:
@@ -2368,7 +2368,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         st.dataframe(df_errors, use_container_width=True)
                         
                         # Meilleur modèle
-                        best_model_idx = min(range(len(error_data)), key=lambda i: float(error_data[i]['MAPE (%)'].replace('%', '')))
+                        best_model_idx = min(range(len(error_data)), key=lambda i: float(str(error_data[i]['MAPE (%)']).replace('%', '')))
                         best_model_name = error_data[best_model_idx]['Modèle']
                         best_mape = error_data[best_model_idx]['MAPE (%)']
                         
