@@ -2259,7 +2259,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                     elif col in average_columns:
                         # Pour les moyennes, remplir par la moyenne de la colonne
                         if not combined_data[col].isna().all():
-                    combined_data[col] = combined_data[col].fillna(combined_data[col].mean())
+                            combined_data[col] = combined_data[col].fillna(combined_data[col].mean())
                         else:
                             combined_data[col] = combined_data[col].fillna(0)
                     elif col in optional_columns:
