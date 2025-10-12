@@ -543,11 +543,13 @@ if page == "🏠 Accueil":
 
 # =========================
   
+# =========================
+  
 elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
     import pandas as pd
     import numpy as np
     from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
-    # UMAP supprimé
+    from umap.umap_ import UMAP
     import plotly.express as px
     import streamlit as st
     import ast
@@ -615,10 +617,9 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         X_scaled = StandardScaler().fit_transform(X_all)
         
   
-        # UMAP supprimé - utiliser PCA à la place
-        from sklearn.decomposition import PCA
-        pca = PCA(n_components=2, random_state=42)
-        embedding = pca.fit_transform(X_scaled)
+        # UMAP
+        umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
+        embedding = umap.fit_transform(X_scaled)
         
         # DataFrame pour visualisation
         df_visu = pd.DataFrame({
@@ -637,7 +638,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
             color="charge_politique_latente",
             color_continuous_scale="RdBu_r",
             hover_name="title",
-            title="Projection PCA des chaînes YouTube par orientation politique"
+            title="Projection UMAP des chaînes YouTube par orientation politique"
         )
         fig.update_traces(textposition='top center', marker=dict(size=10))
         fig.update_layout(height=600, showlegend=False)
@@ -645,7 +646,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         st.success("✅ Chargement complété.")
     
     # Afficher le graphique
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_column_width=True)
     st.markdown("""
         ---
         
@@ -681,7 +682,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         - 🏷️ Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées
         
         #### Réduction de dimension :
-        - 🧭 Les vecteurs sont projetés en 2D via `PCA` (analyse en composantes principales)
+        - 🧭 Les vecteurs sont projetés en 2D via `UMAP` (distance **cosine**)
         
         #### Variables analysées :
         """)
@@ -722,7 +723,6 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         
         df_descr = pd.DataFrame(descripteurs, columns=["🧩 Variable", "🗂️ Description", "🔍 Exemples ou échelle"])
         st.dataframe(df_descr, height=400)
-        
         
 elif page == "🎵 NLP/LLM: Cartographier les artistes français depuis les paroles de leur répertoire.":
     st.markdown("""
