@@ -2298,6 +2298,9 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             monthly_avg = combined_data[var].groupby(combined_data.index.month).mean()
                             exog_forecast[var] = [monthly_avg.get(month, combined_data[var].mean()) for month in range(1, 13)]
                 
+                # S'assurer que les données exogènes ont la même forme que lors de l'entraînement
+                exog_forecast = exog_forecast[available_weather_vars]
+                
                 forecast_weather = fitted_model_weather.get_forecast(steps=periods, exog=exog_forecast)
                 predictions_weather = forecast_weather.predicted_mean.values
                 
@@ -2343,7 +2346,7 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 
                 # Affichage du second graphique
                 st.plotly_chart(fig2, use_container_width=True)
-        else:
+            else:
                 st.error("❌ Pas assez de données après fusion")
             
             # TROISIÈME GRAPHIQUE AVEC DONNÉES DE TRAFIC ROUTIER
@@ -2371,21 +2374,21 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             combined_traffic_data = ts_data.copy()
             combined_traffic_data = combined_traffic_data.join(traffic_data, how='inner')
             
-        # Nettoyage intelligent des données de trafic
+            # Nettoyage intelligent des données de trafic
             for col in ['q', 'k', 'nb_mesures']:
                 if col in combined_traffic_data.columns:
                     # Remplacer inf et -inf par NaN
                     combined_traffic_data[col] = combined_traffic_data[col].replace([np.inf, -np.inf], np.nan)
                     # Remplir les NaN par la moyenne
-                if not combined_traffic_data[col].isna().all():
-                    combined_traffic_data[col] = combined_traffic_data[col].fillna(combined_traffic_data[col].mean())
-                else:
-                    combined_traffic_data[col] = combined_traffic_data[col].fillna(0)
+                    if not combined_traffic_data[col].isna().all():
+                        combined_traffic_data[col] = combined_traffic_data[col].fillna(combined_traffic_data[col].mean())
+                    else:
+                        combined_traffic_data[col] = combined_traffic_data[col].fillna(0)
             
-        # Ne pas faire de dropna() - garder toutes les données fusionnées
+            # Ne pas faire de dropna() - garder toutes les données fusionnées
             
             if len(combined_traffic_data) > 0:
-            st.write(f"📊 **Données utilisées :** {len(combined_traffic_data)} lignes")
+                st.write(f"📊 **Données utilisées :** {len(combined_traffic_data)} lignes")
                 # Entraînement SARIMA avec données de trafic
                 model_traffic = SARIMAX(
                     combined_traffic_data['accidents'], 
@@ -2395,18 +2398,21 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 )
                 fitted_model_traffic = model_traffic.fit(disp=False)
                 
-            # Prédictions 2023 avec données de trafic saisonnières réalistes
-            exog_forecast_traffic = pd.DataFrame(index=future_dates)
-            
-            for var in ['q', 'k', 'nb_mesures']:
-                if var in combined_traffic_data.columns:
-                    # Utiliser les moyennes mensuelles historiques
-                    monthly_avg = combined_traffic_data[var].groupby(combined_traffic_data.index.month).mean()
-                    exog_forecast_traffic[var] = [monthly_avg.get(month, combined_traffic_data[var].mean()) for month in range(1, 13)]
-                else:
-                    # Si la variable n'est pas disponible, utiliser la moyenne globale
-                    exog_forecast_traffic[var] = [combined_traffic_data[var].mean() if var in combined_traffic_data.columns else 0] * 12
-            
+                # Prédictions 2023 avec données de trafic saisonnières réalistes
+                exog_forecast_traffic = pd.DataFrame(index=future_dates)
+                
+                for var in ['q', 'k', 'nb_mesures']:
+                    if var in combined_traffic_data.columns:
+                        # Utiliser les moyennes mensuelles historiques
+                        monthly_avg = combined_traffic_data[var].groupby(combined_traffic_data.index.month).mean()
+                        exog_forecast_traffic[var] = [monthly_avg.get(month, combined_traffic_data[var].mean()) for month in range(1, 13)]
+                    else:
+                        # Si la variable n'est pas disponible, utiliser la moyenne globale
+                        exog_forecast_traffic[var] = [combined_traffic_data[var].mean() if var in combined_traffic_data.columns else 0] * 12
+                
+                # S'assurer que les données exogènes ont la même forme que lors de l'entraînement
+                exog_forecast_traffic = exog_forecast_traffic[['q', 'k', 'nb_mesures']]
+                
                 forecast_traffic = fitted_model_traffic.get_forecast(steps=periods, exog=exog_forecast_traffic)
                 predictions_traffic = forecast_traffic.predicted_mean.values
                 
@@ -2463,44 +2469,56 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
             all_data = all_data.join(weather_data, how='inner')
             all_data = all_data.join(traffic_data, how='inner')
             
-        # Nettoyage intelligent de toutes les données
-        # Colonnes qui représentent des quantités (NaN = 0)
-        quantity_columns = ['prcp', 'snow', 'tsun']  # Précipitations, neige, ensoleillement
-        # Colonnes qui représentent des moyennes (NaN = moyenne de la colonne)
-        average_columns = ['tavg', 'tmin', 'tmax', 'wdir', 'wspd', 'pres', 'q', 'k', 'nb_mesures']  # Températures, vent, pression, trafic
-        # Colonnes optionnelles (peuvent être entièrement vides)
-        optional_columns = ['wpgt']  # Rafales de vent (pas toujours mesurées)
-        
-        for col in all_data.columns:
-            if col != 'accidents':
+            # Nettoyage intelligent de toutes les données
+            # Colonnes qui représentent des quantités (NaN = 0)
+            quantity_columns = ['prcp', 'snow', 'tsun']  # Précipitations, neige, ensoleillement
+            # Colonnes qui représentent des moyennes (NaN = moyenne de la colonne)
+            average_columns = ['tavg', 'tmin', 'tmax', 'wdir', 'wspd', 'pres', 'q', 'k', 'nb_mesures']  # Températures, vent, pression, trafic
+            # Colonnes optionnelles (peuvent être entièrement vides)
+            optional_columns = ['wpgt']  # Rafales de vent (pas toujours mesurées)
+            
+            for col in all_data.columns:
+                if col != 'accidents':
                     # Remplacer inf et -inf par NaN
                     all_data[col] = all_data[col].replace([np.inf, -np.inf], np.nan)
-                
-                if col in quantity_columns:
-                    # Pour les quantités, NaN signifie 0 (pas de précipitations, pas de neige, etc.)
-                    all_data[col] = all_data[col].fillna(0)
-                elif col in average_columns:
-                    # Pour les moyennes, remplir par la moyenne de la colonne
-                    if not all_data[col].isna().all():
-                    all_data[col] = all_data[col].fillna(all_data[col].mean())
-                    else:
+                    
+                    if col in quantity_columns:
+                        # Pour les quantités, NaN signifie 0 (pas de précipitations, pas de neige, etc.)
                         all_data[col] = all_data[col].fillna(0)
-                elif col in optional_columns:
-                    # Pour les colonnes optionnelles, remplir par 0 si entièrement vides
-                    all_data[col] = all_data[col].fillna(0)
+                    elif col in average_columns:
+                        # Pour les moyennes, remplir par la moyenne de la colonne
+                        if not all_data[col].isna().all():
+                            all_data[col] = all_data[col].fillna(all_data[col].mean())
+                        else:
+                            all_data[col] = all_data[col].fillna(0)
+                    elif col in optional_columns:
+                        # Pour les colonnes optionnelles, remplir par 0 si entièrement vides
+                        all_data[col] = all_data[col].fillna(0)
             
-        # Ne pas faire de dropna() - garder toutes les données fusionnées
+            # Ne pas faire de dropna() - garder toutes les données fusionnées
             
             if len(all_data) > 0:
-            st.write(f"📊 **Données utilisées :** {len(all_data)} lignes")
+                st.write(f"📊 **Données utilisées :** {len(all_data)} lignes")
             
                 # Entraînement SARIMA avec toutes les données
                 all_exog_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']
                 available_all_vars = [var for var in all_exog_vars if var in all_data.columns]
                 
+                # Vérification finale des données exogènes avant création du modèle
+                exog_data = all_data[available_all_vars].copy()
+                
+                # S'assurer qu'il n'y a plus de NaN ou d'inf dans les données exogènes
+                for col in exog_data.columns:
+                    exog_data[col] = exog_data[col].replace([np.inf, -np.inf], np.nan)
+                    if exog_data[col].isna().any():
+                        if col in ['prcp', 'snow', 'tsun']:
+                            exog_data[col] = exog_data[col].fillna(0)
+                        else:
+                            exog_data[col] = exog_data[col].fillna(exog_data[col].mean())
+                
                 model_all = SARIMAX(
                     all_data['accidents'], 
-                    exog=all_data[available_all_vars],
+                    exog=exog_data,
                     order=(p, d, q), 
                     seasonal_order=(P, D, Q, s)
                 )
@@ -2523,128 +2541,131 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                         # Pour les autres variables, utiliser la moyenne globale
                         exog_forecast_all[var] = [all_data[var].mean()] * 12
             
-                forecast_all = fitted_model_all.get_forecast(steps=periods, exog=exog_forecast_all)
-                predictions_all = forecast_all.predicted_mean.values
+            # S'assurer que les données exogènes ont la même forme que lors de l'entraînement
+            exog_forecast_all = exog_forecast_all[available_all_vars]
+            
+            forecast_all = fitted_model_all.get_forecast(steps=periods, exog=exog_forecast_all)
+            predictions_all = forecast_all.predicted_mean.values
                 
-                # Création du quatrième graphique
-                fig4 = go.Figure()
-                
-                # Données historiques
-                hist_df4 = all_data.reset_index()
-                hist_df4['accidents'] = hist_df4['accidents'].astype(float)
-                
-                fig4.add_trace(go.Scatter(
-                    x=hist_df4['date'],
-                    y=hist_df4['accidents'],
-                    mode='lines+markers',
-                    name='Données historiques',
-                    line=dict(color='purple', width=2),
-                    marker=dict(size=4)
-                ))
-                
-                # Prédictions 2023 avec toutes les données
-                pred_df4 = pd.DataFrame({
-                    'date': future_dates,
-                    'accidents': predictions_all.astype(float)
-                })
-                
-                fig4.add_trace(go.Scatter(
-                    x=pred_df4['date'],
-                    y=pred_df4['accidents'],
-                    mode='lines+markers',
-                    name='Prédictions 2023 (toutes données)',
-                    line=dict(color='gold', width=3, dash='dash'),
-                    marker=dict(size=6)
-                ))
-                
-                # Configuration du quatrième graphique
-                fig4.update_layout(
-                    title="Prédictions SARIMA avec toutes les données - Accidents à Paris 2023",
-                    xaxis_title="Date",
-                    yaxis_title="Nombre d'accidents",
-                    height=600,
-                    hovermode='x unified'
-                )
-                
-                # Affichage du quatrième graphique
-                st.plotly_chart(fig4, use_container_width=True)
+            # Création du quatrième graphique
+            fig4 = go.Figure()
+            
+            # Données historiques
+            hist_df4 = all_data.reset_index()
+            hist_df4['accidents'] = hist_df4['accidents'].astype(float)
+            
+            fig4.add_trace(go.Scatter(
+                x=hist_df4['date'],
+                y=hist_df4['accidents'],
+                mode='lines+markers',
+                name='Données historiques',
+                line=dict(color='purple', width=2),
+                marker=dict(size=4)
+            ))
+            
+            # Prédictions 2023 avec toutes les données
+            pred_df4 = pd.DataFrame({
+                'date': future_dates,
+                'accidents': predictions_all.astype(float)
+            })
+            
+            fig4.add_trace(go.Scatter(
+                x=pred_df4['date'],
+                y=pred_df4['accidents'],
+                mode='lines+markers',
+                name='Prédictions 2023 (toutes données)',
+                line=dict(color='gold', width=3, dash='dash'),
+                marker=dict(size=6)
+            ))
+            
+            # Configuration du quatrième graphique
+            fig4.update_layout(
+                title="Prédictions SARIMA avec toutes les données - Accidents à Paris 2023",
+                xaxis_title="Date",
+                yaxis_title="Nombre d'accidents",
+                height=600,
+                hovermode='x unified'
+            )
+            
+            # Affichage du quatrième graphique
+            st.plotly_chart(fig4, use_container_width=True)
         else:
             st.error("❌ Pas assez de données après fusion de toutes les sources")
+            
+            # CINQUIÈME GRAPHIQUE - IMPORTANCE DES VARIABLES
+            st.markdown("### 📊 Importance des variables dans la prédiction")
+            
+            # Extraction des coefficients du modèle
+            try:
+                # Récupération des coefficients des variables exogènes
+                exog_coef = fitted_model_all.params[1:1+len(available_all_vars)]  # Exclure la constante
+                exog_names = available_all_vars
                 
-                # CINQUIÈME GRAPHIQUE - IMPORTANCE DES VARIABLES
-                st.markdown("### 📊 Importance des variables dans la prédiction")
+                # Création du graphique d'importance
+                fig5 = go.Figure()
                 
-                # Extraction des coefficients du modèle
-                try:
-                    # Récupération des coefficients des variables exogènes
-                    exog_coef = fitted_model_all.params[1:1+len(available_all_vars)]  # Exclure la constante
-                    exog_names = available_all_vars
-                    
-                    # Création du graphique d'importance
-                    fig5 = go.Figure()
-                    
-                    # Tri par valeur absolue pour l'importance
-                    importance_data = list(zip(exog_names, exog_coef))
-                    importance_data.sort(key=lambda x: abs(x[1]), reverse=True)
-                    
-                    variables = [item[0] for item in importance_data]
-                    coefficients = [item[1] for item in importance_data]
-                    
-                    # Couleurs selon le signe du coefficient
-                    colors = ['red' if coef < 0 else 'green' for coef in coefficients]
-                    
-                    fig5.add_trace(go.Bar(
-                        x=variables,
-                        y=coefficients,
-                        marker_color=colors,
-                        text=[f'{coef:.4f}' for coef in coefficients],
-                        textposition='auto'
-                    ))
-                    
-                    fig5.update_layout(
-                        title="Importance des variables dans la prédiction SARIMA",
-                        xaxis_title="Variables",
-                        yaxis_title="Coefficient",
-                        height=500,
-                        showlegend=False
-                    )
-                    
-                    # Rotation des labels x
-                    fig5.update_xaxes(tickangle=45)
-                    
-                    # Affichage du cinquième graphique
-                    st.plotly_chart(fig5, use_container_width=True)
-                    
-                    # Dictionnaire des descriptions des variables
-                    var_descriptions = {
-                        'tavg': 'Température moyenne',
-                        'tmin': 'Température minimale',
-                        'tmax': 'Température maximale',
-                        'prcp': 'Précipitations',
-                        'snow': 'Neige',
-                        'wdir': 'Direction du vent',
-                        'wspd': 'Vitesse du vent',
-                        'wpgt': 'Rafales de vent',
-                        'pres': 'Pression atmosphérique',
-                        'tsun': 'Ensoleillement',
-                        'q': 'Débit routier (véhicules/h)',
-                        'k': 'Densité routière (véhicules/km)',
-                        'nb_mesures': 'Nombre de mesures de trafic'
-                    }
-                    
-                    # Tableau récapitulatif des variables
-                    st.markdown("#### 📋 Récapitulatif des variables")
-                    importance_df = pd.DataFrame({
-                        'Variable': variables,
-                        'Description': [var_descriptions.get(var, var) for var in variables],
-                        'Coefficient': [f'{coef:.4f}' for coef in coefficients],
-                        'Impact': ['Positif' if coef > 0 else 'Négatif' for coef in coefficients],
-                        'Importance': [f'{abs(coef):.4f}' for coef in coefficients]
-                    })
-                    st.dataframe(importance_df, use_container_width=True)
-                    
-                except Exception as e:
-                    st.warning(f"⚠️ Impossible d'extraire l'importance des variables: {e}")
+                # Tri par valeur absolue pour l'importance
+                importance_data = list(zip(exog_names, exog_coef))
+                importance_data.sort(key=lambda x: abs(x[1]), reverse=True)
+                
+                variables = [item[0] for item in importance_data]
+                coefficients = [item[1] for item in importance_data]
+                
+                # Couleurs selon le signe du coefficient
+                colors = ['red' if coef < 0 else 'green' for coef in coefficients]
+                
+                fig5.add_trace(go.Bar(
+                    x=variables,
+                    y=coefficients,
+                    marker_color=colors,
+                    text=[f'{coef:.4f}' for coef in coefficients],
+                    textposition='auto'
+                ))
+                
+                fig5.update_layout(
+                    title="Importance des variables dans la prédiction SARIMA",
+                    xaxis_title="Variables",
+                    yaxis_title="Coefficient",
+                    height=500,
+                    showlegend=False
+                )
+                
+                # Rotation des labels x
+                fig5.update_xaxes(tickangle=45)
+                
+                # Affichage du cinquième graphique
+                st.plotly_chart(fig5, use_container_width=True)
+                
+                # Dictionnaire des descriptions des variables
+                var_descriptions = {
+                    'tavg': 'Température moyenne',
+                    'tmin': 'Température minimale',
+                    'tmax': 'Température maximale',
+                    'prcp': 'Précipitations',
+                    'snow': 'Neige',
+                    'wdir': 'Direction du vent',
+                    'wspd': 'Vitesse du vent',
+                    'wpgt': 'Rafales de vent',
+                    'pres': 'Pression atmosphérique',
+                    'tsun': 'Ensoleillement',
+                    'q': 'Débit routier (véhicules/h)',
+                    'k': 'Densité routière (véhicules/km)',
+                    'nb_mesures': 'Nombre de mesures de trafic'
+                }
+                
+                # Tableau récapitulatif des variables
+                st.markdown("#### 📋 Récapitulatif des variables")
+                importance_df = pd.DataFrame({
+                    'Variable': variables,
+                    'Description': [var_descriptions.get(var, var) for var in variables],
+                    'Coefficient': [f'{coef:.4f}' for coef in coefficients],
+                    'Impact': ['Positif' if coef > 0 else 'Négatif' for coef in coefficients],
+                    'Importance': [f'{abs(coef):.4f}' for coef in coefficients]
+                })
+                st.dataframe(importance_df, use_container_width=True)
+                
+            except Exception as e:
+                st.warning(f"⚠️ Impossible d'extraire l'importance des variables: {e}")
                 
         # CINQUIÈME GRAPHIQUE SARIMA SANS 2020
         st.markdown("---")
@@ -2662,9 +2683,21 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                 all_exog_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']
                 available_all_vars = [var for var in all_exog_vars if var in all_data_no_2020.columns]
                 
+                # Vérification finale des données exogènes avant création du modèle
+                exog_data_no_2020 = all_data_no_2020[available_all_vars].copy()
+                
+                # S'assurer qu'il n'y a plus de NaN ou d'inf dans les données exogènes
+                for col in exog_data_no_2020.columns:
+                    exog_data_no_2020[col] = exog_data_no_2020[col].replace([np.inf, -np.inf], np.nan)
+                    if exog_data_no_2020[col].isna().any():
+                        if col in ['prcp', 'snow', 'tsun']:
+                            exog_data_no_2020[col] = exog_data_no_2020[col].fillna(0)
+                        else:
+                            exog_data_no_2020[col] = exog_data_no_2020[col].fillna(exog_data_no_2020[col].mean())
+                
                 model_no_2020 = SARIMAX(
                     all_data_no_2020['accidents'], 
-                    exog=all_data_no_2020[available_all_vars],
+                    exog=exog_data_no_2020,
                     order=(p, d, q), 
                     seasonal_order=(P, D, Q, s)
                 )
@@ -2683,9 +2716,12 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
                             # Pour les données de trafic, utiliser les moyennes mensuelles historiques (sans 2020)
                             monthly_avg = all_data_no_2020[var].groupby(all_data_no_2020.index.month).mean()
                             exog_forecast_no_2020[var] = [monthly_avg.get(month, all_data_no_2020[var].mean()) for month in range(1, 13)]
-            else:
+                        else:
                             # Pour les autres variables, utiliser la moyenne globale (sans 2020)
                             exog_forecast_no_2020[var] = [all_data_no_2020[var].mean()] * 12
+                
+                # S'assurer que les données exogènes ont la même forme que lors de l'entraînement
+                exog_forecast_no_2020 = exog_forecast_no_2020[available_all_vars]
                 
                 forecast_no_2020 = fitted_model_no_2020.get_forecast(steps=periods, exog=exog_forecast_no_2020)
                 predictions_no_2020 = forecast_no_2020.predicted_mean.values
