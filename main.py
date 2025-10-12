@@ -13,6 +13,15 @@ from collections import Counter
 import base64
 from pathlib import Path
 
+# Imports pour les modèles avancés
+try:
+    from prophet import Prophet
+    PROPHET_AVAILABLE = True
+except ImportError:
+    PROPHET_AVAILABLE = False
+
+# ARCH supprimé
+
 # =========================
 # CONFIG APP
 # =========================
@@ -216,7 +225,7 @@ if page == "🏠 Accueil":
         st.markdown("<h1>Théo Bernad</h1>", unsafe_allow_html=True)
         st.markdown('<div class="accent"></div>', unsafe_allow_html=True)
         st.markdown(
-        '<p class="lead">Développeur Full Stack Data | Création de solutions automatisées pour des gains d\'efficacité et une vision data-driven.</p>',
+        '<p class="lead"> Professionnel Data Full Stack  | Création de solutions automatisées pour des gains d\'efficacité et une vision data-driven.</p>',
         unsafe_allow_html=True
     )
         st.markdown(
@@ -538,7 +547,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
     import pandas as pd
     import numpy as np
     from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
-    from umap import UMAP
+    # UMAP supprimé
     import plotly.express as px
     import streamlit as st
     import ast
@@ -606,9 +615,10 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         X_scaled = StandardScaler().fit_transform(X_all)
         
   
-        # UMAP
-        umap = UMAP(n_neighbors=5, min_dist=0.1, metric="cosine", random_state=42)
-        embedding = umap.fit_transform(X_scaled)
+        # UMAP supprimé - utiliser PCA à la place
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components=2, random_state=42)
+        embedding = pca.fit_transform(X_scaled)
         
         # DataFrame pour visualisation
         df_visu = pd.DataFrame({
@@ -627,7 +637,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
             color="charge_politique_latente",
             color_continuous_scale="RdBu_r",
             hover_name="title",
-            title="Projection UMAP des chaînes YouTube par orientation politique"
+            title="Projection PCA des chaînes YouTube par orientation politique"
         )
         fig.update_traces(textposition='top center', marker=dict(size=10))
         fig.update_layout(height=600, showlegend=False)
@@ -671,7 +681,7 @@ elif page== "▶️ NLP: Cartographie politique des Youtubeurs":
         - 🏷️ Les variables **catégorielles multilabels** (ex: *valeurs*, *figures ennemies*) sont vectorisées
         
         #### Réduction de dimension :
-        - 🧭 Les vecteurs sont projetés en 2D via `UMAP` (distance **cosine**)
+        - 🧭 Les vecteurs sont projetés en 2D via `PCA` (analyse en composantes principales)
         
         #### Variables analysées :
         """)
@@ -2090,169 +2100,1284 @@ elif page == "🚨 ML: Analyse d'accidentologie à Paris":
 
     with tab_predictions:
         st.markdown("### 🔮 Prédictions SARIMA 2023")
-        st.markdown("Prédiction des accidents à Paris pour l'année 2023")
         
         # Chargement des données
         @st.cache_data
         def load_accident_data():
-            """Charger et préparer les données d'accidents"""
-            try:
                 df = pd.read_parquet('accidentologie.parquet')
                 df['Date'] = pd.to_datetime(df['Date'])
-                
-                # Agrégation par mois
                 monthly_accidents = df.groupby(df['Date'].dt.to_period('M')).size().reset_index()
                 monthly_accidents.columns = ['date', 'accidents']
+                monthly_accidents['accidents'] = monthly_accidents['accidents'].astype(int)
                 monthly_accidents['date'] = monthly_accidents['date'].dt.to_timestamp()
                 monthly_accidents = monthly_accidents.set_index('date')
-                
                 return monthly_accidents
-            except Exception as e:
-                st.error(f"Erreur lors du chargement des données : {str(e)}")
-                return None
         
         # Chargement des données
         ts_data = load_accident_data()
         
+        
         if ts_data is not None:
-            st.success("✅ Données chargées avec succès")
-            
-            # Affichage des métriques
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Période", f"{ts_data.index.min().strftime('%Y-%m')} à {ts_data.index.max().strftime('%Y-%m')}")
-            with col2:
-                st.metric("Total accidents", f"{ts_data['accidents'].sum():,}")
-            
             # Import des librairies
+            from statsmodels.tsa.statespace.sarimax import SARIMAX
+            import numpy as np
+            import warnings
+            warnings.filterwarnings('ignore')
+            
+            # Import pour XGBoost
             try:
-                from statsmodels.tsa.statespace.sarimax import SARIMAX
-                import numpy as np
-                import warnings
-                warnings.filterwarnings('ignore')
+                import xgboost as xgb
+                from sklearn.model_selection import train_test_split
+                from sklearn.metrics import mean_absolute_error, mean_squared_error
+                XGBOOST_AVAILABLE = True
+            except ImportError:
+                XGBOOST_AVAILABLE = False
+            
+            # Paramètres SARIMA
+            p, d, q = 1, 1, 1
+            P, D, Q, s = 1, 1, 1, 12
+            periods = 12
+            
+            # Préparation des données
+            ts_clean = ts_data.dropna()
+            ts_clean['accidents'] = pd.to_numeric(ts_clean['accidents'], errors='coerce')
+            ts_clean = ts_clean.dropna()
+            
+            st.write(f"📊 **Données utilisées :** {len(ts_clean)} lignes")
+            
+            future_dates = pd.date_range(start='2023-01-01', periods=12, freq='MS')
+            
+            # Entraînement du modèle SARIMA
+            model = SARIMAX(ts_clean['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
+            fitted_model = model.fit(disp=False)
+            forecast = fitted_model.get_forecast(steps=periods)
+            predictions = forecast.predicted_mean.values
+            
+            # Création du graphique
+            import plotly.graph_objects as go
+            
+            fig = go.Figure()
+            
+            # Données historiques
+            hist_df = ts_clean.reset_index()
+            hist_df['accidents'] = hist_df['accidents'].astype(float)
+            
+            fig.add_trace(go.Scatter(
+                x=hist_df['date'],
+                y=hist_df['accidents'],
+                mode='lines+markers',
+                name='Données historiques',
+                line=dict(color='blue', width=2),
+                marker=dict(size=4)
+            ))
+            
+            # Prédictions 2023
+            pred_df = pd.DataFrame({
+                'date': future_dates,
+                'accidents': predictions.astype(float)
+            })
+            
+            fig.add_trace(go.Scatter(
+                x=pred_df['date'],
+                y=pred_df['accidents'],
+                mode='lines+markers',
+                name='Prédictions 2023',
+                line=dict(color='red', width=3, dash='dash'),
+                marker=dict(size=6)
+            ))
+            
+            # Configuration du graphique
+            fig.update_layout(
+                title="Prédictions SARIMA - Accidents à Paris 2023",
+                xaxis_title="Date",
+                yaxis_title="Nombre d'accidents",
+                height=600,
+                hovermode='x unified'
+            )
+            
+            # Affichage du graphique
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # SECOND GRAPHIQUE AVEC DONNÉES MÉTÉOROLOGIQUES
+            st.markdown("### 🌤️ Prédictions SARIMA avec données météorologiques (avec 2020)")
+            
+            # Chargement des données météorologiques
+            @st.cache_data
+            def load_weather_data():
+                weather_df = pd.read_csv('data_meteo.csv')
                 
-                # Paramètres SARIMA
-                p, d, q = 1, 1, 1
-                P, D, Q, s = 1, 1, 1, 12
-                periods = 12
+                # Nettoyage des données : supprimer les lignes vides
+                weather_df = weather_df.dropna(subset=['date'])
+                
+                # Conversion des colonnes numériques en float, en gérant les valeurs vides
+                numeric_columns = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']
+                for col in numeric_columns:
+                    if col in weather_df.columns:
+                        weather_df[col] = pd.to_numeric(weather_df[col], errors='coerce')
+                
+                weather_df['date'] = pd.to_datetime(weather_df['date'])
+                weather_df = weather_df.set_index('date')
+                
+                # Agrégation par mois avec la même fréquence que les accidents
+                monthly_weather = weather_df.resample('MS').agg({
+                    'tavg': 'mean',    # Température moyenne
+                    'tmin': 'mean',    # Température minimale
+                    'tmax': 'mean',    # Température maximale
+                    'prcp': 'sum',     # Précipitations
+                    'snow': 'sum',     # Neige
+                    'wdir': 'mean',    # Direction du vent
+                    'wspd': 'mean',    # Vitesse du vent
+                    'wpgt': 'mean',    # Rafales de vent
+                    'pres': 'mean',    # Pression atmosphérique
+                    'tsun': 'sum'      # Ensoleillement
+                })
+                
+                return monthly_weather
+            
+            weather_data = load_weather_data()
+            
+            # Fusion des données d'accidents et météo
+            combined_data = ts_data.copy()
+            combined_data = combined_data.join(weather_data, how='inner')
+            
+            # Nettoyage intelligent des données météo
+            # Colonnes qui représentent des quantités (NaN = 0)
+            quantity_columns = ['prcp', 'snow', 'tsun']  # Précipitations, neige, ensoleillement
+            # Colonnes qui représentent des moyennes (NaN = moyenne de la colonne)
+            average_columns = ['tavg', 'tmin', 'tmax', 'wdir', 'wspd', 'pres']  # Températures, vent, pression
+            # Colonnes optionnelles (peuvent être entièrement vides)
+            optional_columns = ['wpgt']  # Rafales de vent (pas toujours mesurées)
+            
+            for col in combined_data.columns:
+                if col != 'accidents':
+                    # Remplacer inf et -inf par NaN
+                    combined_data[col] = combined_data[col].replace([np.inf, -np.inf], np.nan)
+                    
+                    if col in quantity_columns:
+                        # Pour les quantités, NaN signifie 0 (pas de précipitations, pas de neige, etc.)
+                        combined_data[col] = combined_data[col].fillna(0)
+                    elif col in average_columns:
+                        # Pour les moyennes, remplir par la moyenne de la colonne
+                        if not combined_data[col].isna().all():
+                    combined_data[col] = combined_data[col].fillna(combined_data[col].mean())
+                        else:
+                            combined_data[col] = combined_data[col].fillna(0)
+                    elif col in optional_columns:
+                        # Pour les colonnes optionnelles, remplir par 0 si entièrement vides
+                        combined_data[col] = combined_data[col].fillna(0)
+            
+            # Ne pas supprimer de colonnes - toutes les colonnes météo sont utiles
+            # Ne pas faire de dropna() - on veut garder toutes les données fusionnées
+            
+            if len(combined_data) > 0:
+                st.write(f"📊 **Données utilisées :** {len(combined_data)} lignes")
+                
+                # Entraînement SARIMA avec données météo
+                weather_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']
+                available_weather_vars = [var for var in weather_vars if var in combined_data.columns]
+                
+                model_weather = SARIMAX(
+                    combined_data['accidents'], 
+                    exog=combined_data[available_weather_vars],
+                    order=(p, d, q), 
+                    seasonal_order=(P, D, Q, s)
+                )
+                fitted_model_weather = model_weather.fit(disp=False)
+                
+                # Prédictions 2023 avec données météo saisonnières réalistes
+                exog_forecast = pd.DataFrame(index=future_dates)
+                
+                for var in available_weather_vars:
+                    if var in combined_data.columns:
+                        if var in ['prcp', 'snow', 'tsun']:
+                            # Pour les quantités, utiliser les moyennes mensuelles historiques
+                            monthly_avg = combined_data[var].groupby(combined_data.index.month).mean()
+                            exog_forecast[var] = [monthly_avg.get(month, combined_data[var].mean()) for month in range(1, 13)]
+                        else:
+                            # Pour les moyennes, utiliser les moyennes mensuelles historiques
+                            monthly_avg = combined_data[var].groupby(combined_data.index.month).mean()
+                            exog_forecast[var] = [monthly_avg.get(month, combined_data[var].mean()) for month in range(1, 13)]
+                
+                forecast_weather = fitted_model_weather.get_forecast(steps=periods, exog=exog_forecast)
+                predictions_weather = forecast_weather.predicted_mean.values
+                
+                # Création du second graphique
+                fig2 = go.Figure()
+                
+                # Données historiques (avec 2020)
+                hist_df2 = combined_data.reset_index()
+                hist_df2['accidents'] = hist_df2['accidents'].astype(float)
+                
+                fig2.add_trace(go.Scatter(
+                    x=hist_df2['date'],
+                    y=hist_df2['accidents'],
+                    mode='lines+markers',
+                    name='Données historiques (avec 2020)',
+                    line=dict(color='green', width=2),
+                    marker=dict(size=4)
+                ))
+                
+                # Prédictions 2023 avec météo
+                pred_df2 = pd.DataFrame({
+                    'date': future_dates,
+                    'accidents': predictions_weather.astype(float)
+                })
+                
+                fig2.add_trace(go.Scatter(
+                    x=pred_df2['date'],
+                    y=pred_df2['accidents'],
+                    mode='lines+markers',
+                    name='Prédictions 2023 (avec météo)',
+                    line=dict(color='orange', width=3, dash='dash'),
+                    marker=dict(size=6)
+                ))
+                
+                # Configuration du second graphique
+                fig2.update_layout(
+                    title="Prédictions SARIMA avec données météorologiques - Accidents à Paris 2023",
+                    xaxis_title="Date",
+                    yaxis_title="Nombre d'accidents",
+                    height=600,
+                    hovermode='x unified'
+                )
+                
+                # Affichage du second graphique
+                st.plotly_chart(fig2, use_container_width=True)
+        else:
+                st.error("❌ Pas assez de données après fusion")
+            
+            # TROISIÈME GRAPHIQUE AVEC DONNÉES DE TRAFIC ROUTIER
+            st.markdown("### 🚗 Prédictions SARIMA avec données de trafic routier")
+            
+            # Chargement des données de trafic routier
+            @st.cache_data
+            def load_traffic_data():
+                traffic_df = pd.read_csv('trafic_routier_paris.csv', sep=';')
+                traffic_df['date'] = pd.to_datetime(traffic_df['date'])
+                traffic_df = traffic_df.set_index('date')
+                
+                # Agrégation par mois avec la même fréquence que les accidents
+                monthly_traffic = traffic_df.resample('MS').agg({
+                    'q': 'mean',  # Débit moyen
+                    'k': 'mean',  # Densité moyenne
+                    'nb_mesures': 'sum'  # Nombre total de mesures
+                })
+                
+                return monthly_traffic
+            
+            traffic_data = load_traffic_data()
+            
+            # Fusion des données d'accidents et trafic
+            combined_traffic_data = ts_data.copy()
+            combined_traffic_data = combined_traffic_data.join(traffic_data, how='inner')
+            
+        # Nettoyage intelligent des données de trafic
+            for col in ['q', 'k', 'nb_mesures']:
+                if col in combined_traffic_data.columns:
+                    # Remplacer inf et -inf par NaN
+                    combined_traffic_data[col] = combined_traffic_data[col].replace([np.inf, -np.inf], np.nan)
+                    # Remplir les NaN par la moyenne
+                if not combined_traffic_data[col].isna().all():
+                    combined_traffic_data[col] = combined_traffic_data[col].fillna(combined_traffic_data[col].mean())
+                else:
+                    combined_traffic_data[col] = combined_traffic_data[col].fillna(0)
+            
+        # Ne pas faire de dropna() - garder toutes les données fusionnées
+            
+            if len(combined_traffic_data) > 0:
+            st.write(f"📊 **Données utilisées :** {len(combined_traffic_data)} lignes")
+                # Entraînement SARIMA avec données de trafic
+                model_traffic = SARIMAX(
+                    combined_traffic_data['accidents'], 
+                    exog=combined_traffic_data[['q', 'k', 'nb_mesures']],
+                    order=(p, d, q), 
+                    seasonal_order=(P, D, Q, s)
+                )
+                fitted_model_traffic = model_traffic.fit(disp=False)
+                
+            # Prédictions 2023 avec données de trafic saisonnières réalistes
+            exog_forecast_traffic = pd.DataFrame(index=future_dates)
+            
+            for var in ['q', 'k', 'nb_mesures']:
+                if var in combined_traffic_data.columns:
+                    # Utiliser les moyennes mensuelles historiques
+                    monthly_avg = combined_traffic_data[var].groupby(combined_traffic_data.index.month).mean()
+                    exog_forecast_traffic[var] = [monthly_avg.get(month, combined_traffic_data[var].mean()) for month in range(1, 13)]
+                else:
+                    # Si la variable n'est pas disponible, utiliser la moyenne globale
+                    exog_forecast_traffic[var] = [combined_traffic_data[var].mean() if var in combined_traffic_data.columns else 0] * 12
+            
+                forecast_traffic = fitted_model_traffic.get_forecast(steps=periods, exog=exog_forecast_traffic)
+                predictions_traffic = forecast_traffic.predicted_mean.values
+                
+                # Création du troisième graphique
+                fig3 = go.Figure()
+                
+                # Données historiques
+                hist_df3 = combined_traffic_data.reset_index()
+                hist_df3['accidents'] = hist_df3['accidents'].astype(float)
+                
+                fig3.add_trace(go.Scatter(
+                    x=hist_df3['date'],
+                    y=hist_df3['accidents'],
+                    mode='lines+markers',
+                    name='Données historiques',
+                    line=dict(color='blue', width=2),
+                    marker=dict(size=4)
+                ))
+                
+                # Prédictions 2023 avec trafic
+                pred_df3 = pd.DataFrame({
+                    'date': future_dates,
+                    'accidents': predictions_traffic.astype(float)
+                })
+                
+                fig3.add_trace(go.Scatter(
+                    x=pred_df3['date'],
+                    y=pred_df3['accidents'],
+                    mode='lines+markers',
+                    name='Prédictions 2023 (avec trafic)',
+                    line=dict(color='red', width=3, dash='dash'),
+                    marker=dict(size=6)
+                ))
+                
+                # Configuration du troisième graphique
+                fig3.update_layout(
+                    title="Prédictions SARIMA avec données de trafic routier - Accidents à Paris 2023",
+                    xaxis_title="Date",
+                    yaxis_title="Nombre d'accidents",
+                    height=600,
+                    hovermode='x unified'
+                )
+                
+                # Affichage du troisième graphique
+                st.plotly_chart(fig3, use_container_width=True)
+            else:
+                st.error("❌ Pas assez de données de trafic après fusion")
+            
+            # QUATRIÈME GRAPHIQUE AVEC TOUTES LES DONNÉES
+            st.markdown("### 🎯 Prédictions SARIMA avec toutes les données (météo + trafic)")
+            
+            # Fusion de toutes les données
+            all_data = ts_data.copy()
+            all_data = all_data.join(weather_data, how='inner')
+            all_data = all_data.join(traffic_data, how='inner')
+            
+        # Nettoyage intelligent de toutes les données
+        # Colonnes qui représentent des quantités (NaN = 0)
+        quantity_columns = ['prcp', 'snow', 'tsun']  # Précipitations, neige, ensoleillement
+        # Colonnes qui représentent des moyennes (NaN = moyenne de la colonne)
+        average_columns = ['tavg', 'tmin', 'tmax', 'wdir', 'wspd', 'pres', 'q', 'k', 'nb_mesures']  # Températures, vent, pression, trafic
+        # Colonnes optionnelles (peuvent être entièrement vides)
+        optional_columns = ['wpgt']  # Rafales de vent (pas toujours mesurées)
+        
+        for col in all_data.columns:
+            if col != 'accidents':
+                    # Remplacer inf et -inf par NaN
+                    all_data[col] = all_data[col].replace([np.inf, -np.inf], np.nan)
+                
+                if col in quantity_columns:
+                    # Pour les quantités, NaN signifie 0 (pas de précipitations, pas de neige, etc.)
+                    all_data[col] = all_data[col].fillna(0)
+                elif col in average_columns:
+                    # Pour les moyennes, remplir par la moyenne de la colonne
+                    if not all_data[col].isna().all():
+                    all_data[col] = all_data[col].fillna(all_data[col].mean())
+                    else:
+                        all_data[col] = all_data[col].fillna(0)
+                elif col in optional_columns:
+                    # Pour les colonnes optionnelles, remplir par 0 si entièrement vides
+                    all_data[col] = all_data[col].fillna(0)
+            
+        # Ne pas faire de dropna() - garder toutes les données fusionnées
+            
+            if len(all_data) > 0:
+            st.write(f"📊 **Données utilisées :** {len(all_data)} lignes")
+            
+                # Entraînement SARIMA avec toutes les données
+                all_exog_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']
+                available_all_vars = [var for var in all_exog_vars if var in all_data.columns]
+                
+                model_all = SARIMAX(
+                    all_data['accidents'], 
+                    exog=all_data[available_all_vars],
+                    order=(p, d, q), 
+                    seasonal_order=(P, D, Q, s)
+                )
+                fitted_model_all = model_all.fit(disp=False)
+                
+            # Prédictions 2023 avec données saisonnières réalistes
+            exog_forecast_all = pd.DataFrame(index=future_dates)
+            
+            for var in available_all_vars:
+                if var in all_data.columns:
+                    if var in ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']:
+                        # Pour les données météo, utiliser les moyennes mensuelles historiques
+                        monthly_avg = all_data[var].groupby(all_data.index.month).mean()
+                        exog_forecast_all[var] = [monthly_avg.get(month, all_data[var].mean()) for month in range(1, 13)]
+                    elif var in ['q', 'k', 'nb_mesures']:
+                        # Pour les données de trafic, utiliser les moyennes mensuelles historiques
+                        monthly_avg = all_data[var].groupby(all_data.index.month).mean()
+                        exog_forecast_all[var] = [monthly_avg.get(month, all_data[var].mean()) for month in range(1, 13)]
+                    else:
+                        # Pour les autres variables, utiliser la moyenne globale
+                        exog_forecast_all[var] = [all_data[var].mean()] * 12
+            
+                forecast_all = fitted_model_all.get_forecast(steps=periods, exog=exog_forecast_all)
+                predictions_all = forecast_all.predicted_mean.values
+                
+                # Création du quatrième graphique
+                fig4 = go.Figure()
+                
+                # Données historiques
+                hist_df4 = all_data.reset_index()
+                hist_df4['accidents'] = hist_df4['accidents'].astype(float)
+                
+                fig4.add_trace(go.Scatter(
+                    x=hist_df4['date'],
+                    y=hist_df4['accidents'],
+                    mode='lines+markers',
+                    name='Données historiques',
+                    line=dict(color='purple', width=2),
+                    marker=dict(size=4)
+                ))
+                
+                # Prédictions 2023 avec toutes les données
+                pred_df4 = pd.DataFrame({
+                    'date': future_dates,
+                    'accidents': predictions_all.astype(float)
+                })
+                
+                fig4.add_trace(go.Scatter(
+                    x=pred_df4['date'],
+                    y=pred_df4['accidents'],
+                    mode='lines+markers',
+                    name='Prédictions 2023 (toutes données)',
+                    line=dict(color='gold', width=3, dash='dash'),
+                    marker=dict(size=6)
+                ))
+                
+                # Configuration du quatrième graphique
+                fig4.update_layout(
+                    title="Prédictions SARIMA avec toutes les données - Accidents à Paris 2023",
+                    xaxis_title="Date",
+                    yaxis_title="Nombre d'accidents",
+                    height=600,
+                    hovermode='x unified'
+                )
+                
+                # Affichage du quatrième graphique
+                st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.error("❌ Pas assez de données après fusion de toutes les sources")
+                
+                # CINQUIÈME GRAPHIQUE - IMPORTANCE DES VARIABLES
+                st.markdown("### 📊 Importance des variables dans la prédiction")
+                
+                # Extraction des coefficients du modèle
+                try:
+                    # Récupération des coefficients des variables exogènes
+                    exog_coef = fitted_model_all.params[1:1+len(available_all_vars)]  # Exclure la constante
+                    exog_names = available_all_vars
+                    
+                    # Création du graphique d'importance
+                    fig5 = go.Figure()
+                    
+                    # Tri par valeur absolue pour l'importance
+                    importance_data = list(zip(exog_names, exog_coef))
+                    importance_data.sort(key=lambda x: abs(x[1]), reverse=True)
+                    
+                    variables = [item[0] for item in importance_data]
+                    coefficients = [item[1] for item in importance_data]
+                    
+                    # Couleurs selon le signe du coefficient
+                    colors = ['red' if coef < 0 else 'green' for coef in coefficients]
+                    
+                    fig5.add_trace(go.Bar(
+                        x=variables,
+                        y=coefficients,
+                        marker_color=colors,
+                        text=[f'{coef:.4f}' for coef in coefficients],
+                        textposition='auto'
+                    ))
+                    
+                    fig5.update_layout(
+                        title="Importance des variables dans la prédiction SARIMA",
+                        xaxis_title="Variables",
+                        yaxis_title="Coefficient",
+                        height=500,
+                        showlegend=False
+                    )
+                    
+                    # Rotation des labels x
+                    fig5.update_xaxes(tickangle=45)
+                    
+                    # Affichage du cinquième graphique
+                    st.plotly_chart(fig5, use_container_width=True)
+                    
+                    # Dictionnaire des descriptions des variables
+                    var_descriptions = {
+                        'tavg': 'Température moyenne',
+                        'tmin': 'Température minimale',
+                        'tmax': 'Température maximale',
+                        'prcp': 'Précipitations',
+                        'snow': 'Neige',
+                        'wdir': 'Direction du vent',
+                        'wspd': 'Vitesse du vent',
+                        'wpgt': 'Rafales de vent',
+                        'pres': 'Pression atmosphérique',
+                        'tsun': 'Ensoleillement',
+                        'q': 'Débit routier (véhicules/h)',
+                        'k': 'Densité routière (véhicules/km)',
+                        'nb_mesures': 'Nombre de mesures de trafic'
+                    }
+                    
+                    # Tableau récapitulatif des variables
+                    st.markdown("#### 📋 Récapitulatif des variables")
+                    importance_df = pd.DataFrame({
+                        'Variable': variables,
+                        'Description': [var_descriptions.get(var, var) for var in variables],
+                        'Coefficient': [f'{coef:.4f}' for coef in coefficients],
+                        'Impact': ['Positif' if coef > 0 else 'Négatif' for coef in coefficients],
+                        'Importance': [f'{abs(coef):.4f}' for coef in coefficients]
+                    })
+                    st.dataframe(importance_df, use_container_width=True)
+                    
+                except Exception as e:
+                    st.warning(f"⚠️ Impossible d'extraire l'importance des variables: {e}")
+                
+        # CINQUIÈME GRAPHIQUE SARIMA SANS 2020
+        st.markdown("---")
+        st.markdown("### 📊 Prédictions SARIMA sans données 2020 (avec météo et trafic)")
+        
+        # Préparation des données sans 2020 avec météo et trafic
+        if 'all_data' in locals() and len(all_data) > 0:
+            # Utiliser les données complètes sans 2020
+            all_data_no_2020 = all_data[all_data.index.year != 2020].copy()
+            
+            if len(all_data_no_2020) > 0:
+                st.write(f"📊 **Données utilisées (sans 2020, avec météo et trafic) :** {len(all_data_no_2020)} lignes")
+                
+                # Entraînement SARIMA sans 2020 avec toutes les données
+                all_exog_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']
+                available_all_vars = [var for var in all_exog_vars if var in all_data_no_2020.columns]
+                
+                model_no_2020 = SARIMAX(
+                    all_data_no_2020['accidents'], 
+                    exog=all_data_no_2020[available_all_vars],
+                    order=(p, d, q), 
+                    seasonal_order=(P, D, Q, s)
+                )
+                fitted_model_no_2020 = model_no_2020.fit(disp=False)
+                
+                # Prédictions 2023 avec données saisonnières réalistes (sans 2020)
+                exog_forecast_no_2020 = pd.DataFrame(index=future_dates)
+                
+                for var in available_all_vars:
+                    if var in all_data_no_2020.columns:
+                        if var in ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']:
+                            # Pour les données météo, utiliser les moyennes mensuelles historiques (sans 2020)
+                            monthly_avg = all_data_no_2020[var].groupby(all_data_no_2020.index.month).mean()
+                            exog_forecast_no_2020[var] = [monthly_avg.get(month, all_data_no_2020[var].mean()) for month in range(1, 13)]
+                        elif var in ['q', 'k', 'nb_mesures']:
+                            # Pour les données de trafic, utiliser les moyennes mensuelles historiques (sans 2020)
+                            monthly_avg = all_data_no_2020[var].groupby(all_data_no_2020.index.month).mean()
+                            exog_forecast_no_2020[var] = [monthly_avg.get(month, all_data_no_2020[var].mean()) for month in range(1, 13)]
+            else:
+                            # Pour les autres variables, utiliser la moyenne globale (sans 2020)
+                            exog_forecast_no_2020[var] = [all_data_no_2020[var].mean()] * 12
+                
+                forecast_no_2020 = fitted_model_no_2020.get_forecast(steps=periods, exog=exog_forecast_no_2020)
+                predictions_no_2020 = forecast_no_2020.predicted_mean.values
+                
+                # Définir ts_clean_no_2020 pour l'affichage des informations
+                ts_clean_no_2020 = all_data_no_2020['accidents'].dropna()
+            else:
+                st.error("❌ Pas assez de données sans 2020 pour l'entraînement avec météo et trafic")
+        else:
+            # Fallback : utiliser seulement les données d'accidents sans 2020
+            ts_data_no_2020 = ts_data[ts_data.index.year != 2020].copy()
+            
+            if len(ts_data_no_2020) > 0:
+                st.write(f"📊 **Données utilisées (sans 2020, accidents uniquement) :** {len(ts_data_no_2020)} lignes")
+                st.warning("⚠️ Données météo et trafic non disponibles - utilisation des données d'accidents uniquement")
                 
                 # Préparation des données
-                ts_clean = ts_data.dropna()
+                ts_clean_no_2020 = ts_data_no_2020.dropna()
+                ts_clean_no_2020['accidents'] = pd.to_numeric(ts_clean_no_2020['accidents'], errors='coerce')
+                ts_clean_no_2020 = ts_clean_no_2020.dropna()
                 
-                # Vérification et conversion des types de données
-                st.write(f"🔍 **Debug: Type de données avant conversion: {ts_clean['accidents'].dtype}**")
-                st.write(f"🔍 **Debug: Premières valeurs: {ts_clean['accidents'].head().tolist()}**")
+                # Entraînement du modèle SARIMA sans 2020
+                model_no_2020 = SARIMAX(ts_clean_no_2020['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
+                fitted_model_no_2020 = model_no_2020.fit(disp=False)
+                forecast_no_2020 = fitted_model_no_2020.get_forecast(steps=periods)
+                predictions_no_2020 = forecast_no_2020.predicted_mean.values
+            else:
+                st.error("❌ Pas assez de données sans 2020 pour l'entraînement")
+        
+        # Création du graphique SARIMA sans 2020
+        fig_no_2020 = go.Figure()
+        
+        # Données historiques (sans 2020)
+        if 'all_data_no_2020' in locals():
+            hist_df_no_2020 = all_data_no_2020.reset_index()
+        else:
+            hist_df_no_2020 = ts_clean_no_2020.reset_index()
+        
+        hist_df_no_2020['accidents'] = hist_df_no_2020['accidents'].astype(float)
+        
+        fig_no_2020.add_trace(go.Scatter(
+            x=hist_df_no_2020['date'],
+            y=hist_df_no_2020['accidents'],
+            mode='lines+markers',
+            name='Données historiques (sans 2020)',
+            line=dict(color='green', width=2),
+            marker=dict(size=4)
+        ))
+        
+        # Prédictions 2023 sans 2020
+        pred_df_no_2020 = pd.DataFrame({
+            'date': future_dates,
+            'accidents': predictions_no_2020.astype(float)
+        })
+        
+        fig_no_2020.add_trace(go.Scatter(
+            x=pred_df_no_2020['date'],
+            y=pred_df_no_2020['accidents'],
+            mode='lines+markers',
+            name='Prédictions 2023 (sans 2020)',
+            line=dict(color='red', width=3, dash='dash'),
+            marker=dict(size=6)
+        ))
+        
+        # Configuration du graphique
+        fig_no_2020.update_layout(
+            title="Prédictions SARIMA sans données 2020 - Accidents à Paris 2023",
+            xaxis_title="Date",
+            yaxis_title="Nombre d'accidents",
+            height=600,
+            hovermode='x unified'
+        )
+        
+        # Affichage du graphique
+        st.plotly_chart(fig_no_2020, use_container_width=True)
+        
+        # Comparaison des prédictions
+        st.markdown("#### Comparaison des prédictions")
+        
+        # Calculer les prédictions avec 2020 pour comparaison
+        ts_clean_with_2020 = ts_data.dropna()
+        ts_clean_with_2020['accidents'] = pd.to_numeric(ts_clean_with_2020['accidents'], errors='coerce')
+        ts_clean_with_2020 = ts_clean_with_2020.dropna()
+        
+        model_with_2020 = SARIMAX(ts_clean_with_2020['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
+        fitted_model_with_2020 = model_with_2020.fit(disp=False)
+        forecast_with_2020 = fitted_model_with_2020.get_forecast(steps=periods)
+        predictions_with_2020 = forecast_with_2020.predicted_mean.values
+        
+        # Extraction des données réelles de 2023
+        real_2023_data = ts_data[ts_data.index.year == 2023]
+        
+        # Graphique de comparaison
+        fig_comparison = go.Figure()
+        
+        # Prédictions sans 2020
+        fig_comparison.add_trace(go.Scatter(
+            x=future_dates,
+            y=predictions_no_2020,
+            mode='lines+markers',
+            name='Prédictions sans 2020',
+            line=dict(color='red', width=3, dash='dash'),
+            marker=dict(size=6)
+        ))
+        
+        # Prédictions avec 2020
+        fig_comparison.add_trace(go.Scatter(
+            x=future_dates,
+            y=predictions_with_2020,
+            mode='lines+markers',
+            name='Prédictions avec 2020',
+            line=dict(color='blue', width=3, dash='dot'),
+            marker=dict(size=6)
+        ))
+        
+        # Données réelles de 2023 (si disponibles)
+        if len(real_2023_data) > 0:
+            real_2023_dates = real_2023_data.index
+            real_2023_values = real_2023_data['accidents'].values
+            
+            fig_comparison.add_trace(go.Scatter(
+                x=real_2023_dates,
+                y=real_2023_values,
+                mode='lines+markers',
+                name='Données réelles 2023',
+                line=dict(color='green', width=4),
+                marker=dict(size=8)
+            ))
+            
+            # Calculer les métriques de performance
+            min_len = min(len(predictions_no_2020), len(predictions_with_2020), len(real_2023_values))
+            
+            if min_len > 0:
+                mae_no_2020 = np.mean(np.abs(real_2023_values[:min_len] - predictions_no_2020[:min_len]))
+                mae_with_2020 = np.mean(np.abs(real_2023_values[:min_len] - predictions_with_2020[:min_len]))
                 
-                # Conversion en numérique
-                ts_clean['accidents'] = pd.to_numeric(ts_clean['accidents'], errors='coerce')
-                ts_clean = ts_clean.dropna()
+                st.write("**Performance vs données réelles 2023 :**")
+                st.write(f"- MAE sans 2020 : {mae_no_2020:.2f} accidents")
+                st.write(f"- MAE avec 2020 : {mae_with_2020:.2f} accidents")
                 
-                st.write(f"✅ **Debug: Type de données après conversion: {ts_clean['accidents'].dtype}**")
-                st.write(f"✅ **Debug: Premières valeurs: {ts_clean['accidents'].head().tolist()}**")
-                
-                future_dates = pd.date_range(start='2023-01-01', periods=12, freq='MS')
-                
-                # Vérification des données avant entraînement
-                if len(ts_clean) < 24:
-                    st.error(f"❌ Pas assez de données pour l'entraînement SARIMA. Nécessaire: 24 mois, Disponible: {len(ts_clean)} mois")
-                elif ts_clean['accidents'].isna().any():
-                    st.error("❌ Données manquantes détectées après conversion")
+                if mae_no_2020 < mae_with_2020:
+                    st.write("- Le modèle sans 2020 est plus précis")
                 else:
-                    # Entraînement du modèle SARIMA
-                    st.subheader("📊 Entraînement du modèle SARIMA")
-                    with st.spinner("Entraînement du modèle en cours..."):
-                        try:
-                            model = SARIMAX(ts_clean['accidents'], order=(p, d, q), seasonal_order=(P, D, Q, s))
-                            fitted_model = model.fit(disp=False)
-                            forecast = fitted_model.get_forecast(steps=periods)
-                            predictions = forecast.predicted_mean.values
-                        except Exception as e:
-                            st.error(f"❌ Erreur lors de l'entraînement SARIMA: {str(e)}")
-                            st.write(f"🔍 **Debug: Données utilisées pour l'entraînement:**")
-                            st.write(f"- Nombre de points: {len(ts_clean)}")
-                            st.write(f"- Type: {ts_clean['accidents'].dtype}")
-                            st.write(f"- Min: {ts_clean['accidents'].min()}")
-                            st.write(f"- Max: {ts_clean['accidents'].max()}")
-                            st.write(f"- Premières valeurs: {ts_clean['accidents'].head().tolist()}")
-                            raise e
+                    st.write("- Le modèle avec 2020 est plus précis")
+        else:
+            st.write("Aucune donnée réelle de 2023 disponible pour la comparaison")
+        
+        # Configuration du graphique de comparaison
+        fig_comparison.update_layout(
+            title="Comparaison des prédictions SARIMA avec/sans données 2020 vs données réelles",
+            xaxis_title="Date",
+            yaxis_title="Nombre d'accidents",
+            height=500,
+            hovermode='x unified'
+        )
+        
+        st.plotly_chart(fig_comparison, use_container_width=True)
+        
+        # Statistiques de comparaison
+        diff_predictions = predictions_with_2020 - predictions_no_2020
+        mean_diff = np.mean(diff_predictions)
+        max_diff = np.max(np.abs(diff_predictions))
+        
+        st.write("**Impact de 2020 sur les prédictions :**")
+        st.write(f"- Différence moyenne : {mean_diff:.2f} accidents")
+        st.write(f"- Différence maximale : {max_diff:.2f} accidents")
+        st.write(f"- Période d'entraînement sans 2020 : {ts_clean_no_2020.index.min()} à {ts_clean_no_2020.index.max()}")
+        st.write(f"- Période d'entraînement avec 2020 : {ts_clean_with_2020.index.min()} à {ts_clean_with_2020.index.max()}")
+        
+        # SIXIÈME GRAPHIQUE PROPHET
+        st.markdown("---")
+        st.markdown("### Prédictions Prophet (Facebook)")
+        
+        if not PROPHET_AVAILABLE:
+            st.error("Prophet n'est pas installé. Installez-le avec : `pip install prophet`")
+        else:
+            if 'all_data' in locals() and len(all_data) > 0:
+                st.write(f"📊 **Données utilisées :** {len(all_data)} lignes")
                 
-                    st.success("✅ Modèle SARIMA entraîné avec succès")
+                # Préparation des données pour Prophet
+                prophet_data = all_data[['accidents']].copy()
+                prophet_data = prophet_data.reset_index()
+                prophet_data.columns = ['ds', 'y']  # Prophet attend 'ds' (date) et 'y' (valeur)
+                
+                # Ajouter des variables exogènes si disponibles
+                all_exog_vars = ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']
+                available_exog_vars = [var for var in all_exog_vars if var in all_data.columns]
+                
+                for var in available_exog_vars:
+                    prophet_data[var] = all_data[var].values
+                
+                # Entraînement du modèle Prophet
+                model_prophet = Prophet(
+                    yearly_seasonality=True,
+                    weekly_seasonality=False,
+                    daily_seasonality=False,
+                    seasonality_mode='multiplicative',
+                    changepoint_prior_scale=0.05,  # Sensibilité aux changements de tendance
+                    seasonality_prior_scale=10.0,  # Force de la saisonnalité
+                    holidays_prior_scale=10.0,
+                    changepoint_range=0.8
+                )
+                
+                # Ajouter les variables exogènes
+                for var in available_exog_vars:
+                    model_prophet.add_regressor(var)
+                
+                # Entraînement
+                model_prophet.fit(prophet_data)
+                
+                # Prédictions 2023
+                future_prophet = model_prophet.make_future_dataframe(periods=12, freq='MS')
+                
+                # Ajouter les variables exogènes pour 2023
+                for var in available_exog_vars:
+                    if var in ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']:
+                        # Moyennes mensuelles historiques pour les données météo
+                        monthly_avg = all_data[var].groupby(all_data.index.month).mean()
+                        # Créer un array de la bonne longueur (96 lignes)
+                        var_values = np.full(len(future_prophet), np.nan)
+                        # Assigner les valeurs historiques (84 premières lignes)
+                        var_values[:len(all_data)] = all_data[var].values
+                        # Assigner les valeurs futures (12 dernières lignes)
+                        var_values[-12:] = [monthly_avg.get(month, all_data[var].mean()) for month in range(1, 13)]
+                        future_prophet[var] = var_values
+                    elif var in ['q', 'k', 'nb_mesures']:
+                        # Moyennes mensuelles historiques pour les données de trafic
+                        monthly_avg = all_data[var].groupby(all_data.index.month).mean()
+                        # Créer un array de la bonne longueur (96 lignes)
+                        var_values = np.full(len(future_prophet), np.nan)
+                        # Assigner les valeurs historiques (84 premières lignes)
+                        var_values[:len(all_data)] = all_data[var].values
+                        # Assigner les valeurs futures (12 dernières lignes)
+                        var_values[-12:] = [monthly_avg.get(month, all_data[var].mean()) for month in range(1, 13)]
+                        future_prophet[var] = var_values
+                    else:
+                        # Moyenne globale pour les autres variables
+                        future_prophet[var] = all_data[var].mean()
+                
+                # Prédictions
+                forecast_prophet = model_prophet.predict(future_prophet)
+                predictions_prophet = forecast_prophet['yhat'].tail(12).values
+                
+                # Création du graphique Prophet
+                fig_prophet = go.Figure()
+                
+                # Données historiques
+                fig_prophet.add_trace(go.Scatter(
+                    x=all_data.index,
+                    y=all_data['accidents'],
+                    mode='lines+markers',
+                    name='Données historiques',
+                    line=dict(color='lightblue', width=2),
+                    marker=dict(size=4)
+                ))
+                
+                # Prédictions Prophet
+                fig_prophet.add_trace(go.Scatter(
+                    x=future_dates,
+                    y=predictions_prophet,
+                    mode='lines+markers',
+                    name='Prédictions Prophet 2023',
+                    line=dict(color='purple', width=3, dash='dash'),
+                    marker=dict(size=6)
+                ))
+                
+                # Données réelles 2023 si disponibles
+                if 'ts_data' in locals():
+                    real_2023 = ts_data[ts_data.index.year == 2023]
+                    if len(real_2023) > 0:
+                        fig_prophet.add_trace(go.Scatter(
+                            x=real_2023.index,
+                            y=real_2023['accidents'],
+                            mode='lines+markers',
+                            name='Données réelles 2023',
+                            line=dict(color='green', width=3),
+                            marker=dict(size=6)
+                        ))
+                
+                fig_prophet.update_layout(
+                    title='Prédictions Prophet avec variables exogènes',
+                    xaxis_title='Date',
+                    yaxis_title='Nombre d\'accidents',
+                    hovermode='x unified',
+                    height=500
+                )
+                
+                st.plotly_chart(fig_prophet, use_container_width=True)
+                
+                # Métriques Prophet
+                if 'ts_data' in locals():
+                    real_2023 = ts_data[ts_data.index.year == 2023]
+                    if len(real_2023) > 0:
+                        mae_prophet = np.mean(np.abs(predictions_prophet - real_2023['accidents'].values))
+                        rmse_prophet = np.sqrt(np.mean((predictions_prophet - real_2023['accidents'].values) ** 2))
+                        
+                        st.write("**Performance Prophet vs données réelles 2023 :**")
+                        st.write(f"- MAE : {mae_prophet:.2f} accidents")
+                        st.write(f"- RMSE : {rmse_prophet:.2f} accidents")
+            else:
+                st.error("❌ Pas assez de données pour Prophet")
+        
+        # Graphique de synthèse - Modèle hybride (sans ARIMA-GARCH)
+        st.markdown("---")
+        st.markdown("### Synthèse des prédictions - Modèle hybride")
+        
+        if True:  # Toujours exécuter
+            # Vérifier que nous avons les prédictions nécessaires
+            if ('predictions_with_2020' in locals() and 'predictions_no_2020' in locals() and 
+                'predictions_prophet' in locals() and 'ts_data' in locals()):
+                
+                real_2023 = ts_data[ts_data.index.year == 2023]
+                if len(real_2023) > 0:
+                    # Calculer les MAE
+                    mae_with_2020 = np.mean(np.abs(predictions_with_2020 - real_2023['accidents'].values))
+                    mae_no_2020 = np.mean(np.abs(predictions_no_2020 - real_2023['accidents'].values))
+                    mae_prophet = np.mean(np.abs(predictions_prophet - real_2023['accidents'].values))
                     
-                    # Création du graphique
-                    st.subheader("📈 Prédictions SARIMA 2023")
+                    # Créer un modèle hybride basé sur les performances (3 modèles seulement)
+                    predictions_hybrid = []
                     
-                    import plotly.graph_objects as go
+                    # Calculer les poids inversement proportionnels à l'erreur
+                    total_inv_error = 1/mae_with_2020 + 1/mae_no_2020 + 1/mae_prophet
+                    w_with_2020 = (1/mae_with_2020) / total_inv_error
+                    w_no_2020 = (1/mae_no_2020) / total_inv_error
+                    w_prophet = (1/mae_prophet) / total_inv_error
                     
-                    fig = go.Figure()
+                    # Combinaison pondérée des prédictions
+                    for i in range(12):
+                        hybrid_pred = (w_with_2020 * predictions_with_2020[i] + 
+                                    w_no_2020 * predictions_no_2020[i] + 
+                                    w_prophet * predictions_prophet[i])
+                        predictions_hybrid.append(hybrid_pred)
+                    
+                    # Calculer la performance du modèle hybride
+                    mae_hybrid = np.mean(np.abs(predictions_hybrid - real_2023['accidents'].values))
+                    
+                    # Créer le graphique de synthèse
+                    fig_hybrid = go.Figure()
                     
                     # Données historiques
-                    hist_df = ts_clean.reset_index()
-                    fig.add_trace(go.Scatter(
-                        x=hist_df['date'],
-                        y=hist_df['accidents'],
-                        mode='lines+markers',
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=ts_data.index,
+                        y=ts_data['accidents'],
+                        mode='lines',
                         name='Données historiques',
-                        line=dict(color='blue', width=2),
-                        marker=dict(size=4)
+                        line=dict(color='blue', width=2)
                     ))
                     
-                    # Prédictions 2023
-                    pred_df = pd.DataFrame({
-                        'date': future_dates,
-                        'accidents': predictions
-                    })
-                    fig.add_trace(go.Scatter(
-                        x=pred_df['date'],
-                        y=pred_df['accidents'],
+                    # Prédictions individuelles
+                    months_2023 = pd.date_range(start='2023-01-01', periods=12, freq='MS')
+                    
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=months_2023,
+                        y=predictions_with_2020,
                         mode='lines+markers',
-                        name='Prédictions 2023',
-                        line=dict(color='red', width=3, dash='dash'),
-                        marker=dict(size=6)
+                        name=f'SARIMA avec 2020 (MAE: {mae_with_2020:.1f})',
+                        line=dict(color='red', dash='dash')
                     ))
                     
-                    # Configuration du graphique
-                    fig.update_layout(
-                        title="Prédictions SARIMA - Accidents à Paris 2023",
-                        xaxis_title="Date",
-                        yaxis_title="Nombre d'accidents",
-                        height=600,
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=months_2023,
+                        y=predictions_no_2020,
+                        mode='lines+markers',
+                        name=f'SARIMA sans 2020 (MAE: {mae_no_2020:.1f})',
+                        line=dict(color='orange', dash='dash')
+                    ))
+                    
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=months_2023,
+                        y=predictions_prophet,
+                        mode='lines+markers',
+                        name=f'Prophet (MAE: {mae_prophet:.1f})',
+                        line=dict(color='green', dash='dash')
+                    ))
+                    
+                    # Modèle hybride (ligne épaisse)
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=months_2023,
+                        y=predictions_hybrid,
+                        mode='lines+markers',
+                        name=f'Modèle hybride (MAE: {mae_hybrid:.1f})',
+                        line=dict(color='black', width=4)
+                    ))
+                    
+                    # Données réelles 2023
+                    fig_hybrid.add_trace(go.Scatter(
+                        x=months_2023,
+                        y=real_2023['accidents'].values,
+                        mode='lines+markers',
+                        name='Données réelles 2023',
+                        line=dict(color='red', width=3),
+                        marker=dict(size=8)
+                    ))
+                    
+                    fig_hybrid.update_layout(
+                        title='Synthèse des prédictions - Modèle hybride intelligent',
+                        xaxis_title='Date',
+                        yaxis_title='Nombre d\'accidents',
                         hovermode='x unified',
-                        legend=dict(
-                            orientation="h",
-                            yanchor="bottom",
-                            y=1.02,
-                            xanchor="right",
-                            x=1
-                        )
+                        height=600,
+                        showlegend=True
                     )
                     
-                    # Ligne verticale pour 2023
-                    fig.add_vline(
-                        x='2023-01-01',
-                        line_dash="dot",
-                        line_color="gray",
-                        annotation_text="Début 2023",
-                        annotation_position="top"
-                    )
+                    st.plotly_chart(fig_hybrid, use_container_width=True)
                     
-                    # Affichage du graphique
-                    st.plotly_chart(fig, use_container_width=True)
+                    # Affichage des poids du modèle hybride
+                    st.write("**Poids du modèle hybride :**")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("SARIMA avec 2020", f"{w_with_2020:.1%}")
+                    with col2:
+                        st.metric("SARIMA sans 2020", f"{w_no_2020:.1%}")
+                    with col3:
+                        st.metric("Prophet", f"{w_prophet:.1%}")
                     
-                    # Tableau des prédictions
-                    st.subheader("📋 Prédictions mensuelles 2023")
-                    pred_table = pd.DataFrame({
-                        'Mois': [d.strftime('%Y-%m') for d in future_dates],
-                        'Prédictions': predictions.round(1)
-                    })
-                    st.dataframe(pred_table, use_container_width=True)
-                
-            except Exception as e:
-                st.error(f"Erreur lors de l'entraînement du modèle : {str(e)}")
+                    # Comparaison finale avec le modèle hybride
+                    st.write("**Performance finale :**")
+                    final_models = [
+                        ("SARIMA avec 2020", mae_with_2020),
+                        ("SARIMA sans 2020", mae_no_2020),
+                        ("Prophet", mae_prophet),
+                        ("Modèle hybride", mae_hybrid)
+                    ]
+                    
+                    # Trier par performance
+                    final_models.sort(key=lambda x: x[1])
+                    
+                    for i, (model_name, mae_val) in enumerate(final_models):
+                        if i == 0:
+                            st.write(f"🥇 **{model_name}** : {mae_val:.2f} accidents")
+                        elif i == 1:
+                            st.write(f"🥈 **{model_name}** : {mae_val:.2f} accidents")
+                        elif i == 2:
+                            st.write(f"🥉 **{model_name}** : {mae_val:.2f} accidents")
+                        else:
+                            st.write(f"**{model_name}** : {mae_val:.2f} accidents")
+                else:
+                    st.error("❌ Pas de données réelles 2023 pour la comparaison")
+            else:
+                st.error("❌ Prédictions manquantes pour le modèle hybride")
         
+        # SECTION XGBOOST
+        st.markdown("---")
+        st.markdown("### Prédictions XGBoost")
+        
+        if not XGBOOST_AVAILABLE:
+            st.error("XGBoost n'est pas installé. Installez-le avec : `pip install xgboost scikit-learn`")
         else:
-            st.error("Impossible de charger les données d'accidents.")
-        
-        # Informations sur SARIMA
+            if st.button("Lancer la prédiction XGBoost", type="primary"):
+                with st.spinner("Entraînement du modèle XGBoost en cours..."):
+                    try:
+                        # Préparation des données pour XGBoost
+                        # Utiliser les données avec météo et trafic
+                        if 'all_data' in locals() and len(all_data) > 0:
+                            xgb_data = all_data.copy()
+                        else:
+                            # Si pas de données complètes, utiliser les données de base
+                            xgb_data = ts_data.copy()
+                        
+                        # Création des features temporelles avancées
+                        xgb_data['year'] = xgb_data.index.year
+                        xgb_data['month'] = xgb_data.index.month
+                        xgb_data['day_of_year'] = xgb_data.index.dayofyear
+                        xgb_data['quarter'] = xgb_data.index.quarter
+                        
+                        # Features cycliques pour capturer la saisonnalité
+                        xgb_data['month_sin'] = np.sin(2 * np.pi * xgb_data['month'] / 12)
+                        xgb_data['month_cos'] = np.cos(2 * np.pi * xgb_data['month'] / 12)
+                        xgb_data['quarter_sin'] = np.sin(2 * np.pi * xgb_data['quarter'] / 4)
+                        xgb_data['quarter_cos'] = np.cos(2 * np.pi * xgb_data['quarter'] / 4)
+                        
+                        # Features de lag (décalage temporel)
+                        for lag in [1, 2, 3, 6, 12]:
+                            xgb_data[f'accidents_lag_{lag}'] = xgb_data['accidents'].shift(lag)
+                        
+                        # Moyennes mobiles
+                        for window in [3, 6, 12]:
+                            xgb_data[f'accidents_ma_{window}'] = xgb_data['accidents'].rolling(window=window).mean()
+                        
+                        # Features de tendance
+                        xgb_data['accidents_diff'] = xgb_data['accidents'].diff()
+                        xgb_data['accidents_pct_change'] = xgb_data['accidents'].pct_change()
+                        
+                        # Features de volatilité
+                        xgb_data['accidents_std_3'] = xgb_data['accidents'].rolling(window=3).std()
+                        xgb_data['accidents_std_6'] = xgb_data['accidents'].rolling(window=6).std()
+                        
+                        # Supprimer les lignes avec des valeurs manquantes
+                        xgb_data = xgb_data.dropna()
+                        
+                        if len(xgb_data) < 20:
+                            st.error("❌ Pas assez de données pour l'entraînement XGBoost")
+                        else:
+                            st.write(f"📊 **Données utilisées pour XGBoost :** {len(xgb_data)} lignes")
+                            
+                            # Séparation des features et de la target
+                            feature_columns = [col for col in xgb_data.columns if col != 'accidents']
+                            X = xgb_data[feature_columns]
+                            y = xgb_data['accidents']
+                            
+                            # Division train/test (80/20)
+                            X_train, X_test, y_train, y_test = train_test_split(
+                                X, y, test_size=0.2, random_state=42, shuffle=False
+                            )
+                            
+                            # Entraînement du modèle XGBoost optimisé
+                            xgb_model = xgb.XGBRegressor(
+                                n_estimators=200,
+                                max_depth=8,
+                                learning_rate=0.05,
+                                subsample=0.8,
+                                colsample_bytree=0.8,
+                                reg_alpha=0.1,
+                                reg_lambda=0.1,
+                                random_state=42
+                            )
+                            
+                            # Entraînement avec validation set pour early stopping
+                            xgb_model.fit(
+                                X_train, y_train,
+                                eval_set=[(X_test, y_test)],
+                                early_stopping_rounds=20,
+                                verbose=False
+                            )
+                            
+                            # Prédictions sur l'ensemble de test
+                            y_pred = xgb_model.predict(X_test)
+                            
+                            # Métriques de performance
+                            mae = mean_absolute_error(y_test, y_pred)
+                            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+                            
+                            st.success(f"✅ Modèle XGBoost entraîné avec succès !")
+                            st.write(f"📈 **Performance :** MAE = {mae:.2f}, RMSE = {rmse:.2f}")
+                            
+                            # Prédictions pour 2023 - Approche améliorée
+                            predictions_2023 = []
+                            
+                            # Créer un DataFrame pour les prédictions 2023
+                            future_data = []
+                            
+                            for month in range(1, 13):
+                                # Créer une nouvelle ligne pour chaque mois 2023
+                                row = {}
+                                
+                                # Features temporelles
+                                row['year'] = 2023
+                                row['month'] = month
+                                row['day_of_year'] = pd.Timestamp(f'2023-{month:02d}-01').dayofyear
+                                row['quarter'] = pd.Timestamp(f'2023-{month:02d}-01').quarter
+                                
+                                # Features cycliques pour la saisonnalité
+                                row['month_sin'] = np.sin(2 * np.pi * month / 12)
+                                row['month_cos'] = np.cos(2 * np.pi * month / 12)
+                                row['quarter_sin'] = np.sin(2 * np.pi * row['quarter'] / 4)
+                                row['quarter_cos'] = np.cos(2 * np.pi * row['quarter'] / 4)
+                                
+                                # Features de lag - utiliser les vraies données historiques
+                                if month == 1:
+                                    # Janvier 2023 : utiliser les données de décembre 2022
+                                    row['accidents_lag_1'] = xgb_data['accidents'].iloc[-1] if len(xgb_data) > 0 else 0
+                                    row['accidents_lag_2'] = xgb_data['accidents'].iloc[-2] if len(xgb_data) > 1 else 0
+                                    row['accidents_lag_3'] = xgb_data['accidents'].iloc[-3] if len(xgb_data) > 2 else 0
+                                    row['accidents_lag_6'] = xgb_data['accidents'].iloc[-6] if len(xgb_data) > 5 else 0
+                                    row['accidents_lag_12'] = xgb_data['accidents'].iloc[-12] if len(xgb_data) > 11 else 0
+                                else:
+                                    # Utiliser les prédictions précédentes pour les lags
+                                    row['accidents_lag_1'] = predictions_2023[-1] if len(predictions_2023) > 0 else 0
+                                    row['accidents_lag_2'] = predictions_2023[-2] if len(predictions_2023) > 1 else 0
+                                    row['accidents_lag_3'] = predictions_2023[-3] if len(predictions_2023) > 2 else 0
+                                    row['accidents_lag_6'] = predictions_2023[-6] if len(predictions_2023) > 5 else 0
+                                    row['accidents_lag_12'] = predictions_2023[-12] if len(predictions_2023) > 11 else 0
+                                
+                                # Moyennes mobiles - utiliser les prédictions précédentes
+                                if month >= 3:
+                                    row['accidents_ma_3'] = np.mean(predictions_2023[-3:]) if len(predictions_2023) >= 3 else 0
+                                else:
+                                    # Pour les premiers mois, utiliser les données historiques
+                                    hist_data = xgb_data['accidents'].iloc[-(3-month):].tolist() + predictions_2023
+                                    row['accidents_ma_3'] = np.mean(hist_data[-3:]) if len(hist_data) >= 3 else 0
+                                
+                                if month >= 6:
+                                    row['accidents_ma_6'] = np.mean(predictions_2023[-6:]) if len(predictions_2023) >= 6 else 0
+                                else:
+                                    hist_data = xgb_data['accidents'].iloc[-(6-month):].tolist() + predictions_2023
+                                    row['accidents_ma_6'] = np.mean(hist_data[-6:]) if len(hist_data) >= 6 else 0
+                                
+                                if month >= 12:
+                                    row['accidents_ma_12'] = np.mean(predictions_2023[-12:]) if len(predictions_2023) >= 12 else 0
+                                else:
+                                    hist_data = xgb_data['accidents'].iloc[-(12-month):].tolist() + predictions_2023
+                                    row['accidents_ma_12'] = np.mean(hist_data[-12:]) if len(hist_data) >= 12 else 0
+                                
+                                # Copier les autres features des dernières données disponibles
+                                for col in feature_columns:
+                                    if col not in row and col in xgb_data.columns:
+                                        if col in ['tavg', 'tmin', 'tmax', 'prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun', 'q', 'k', 'nb_mesures']:
+                                            # Pour les données météo et trafic, utiliser la moyenne mensuelle historique
+                                            if col in xgb_data.columns:
+                                                monthly_avg = xgb_data[col].groupby(xgb_data.index.month).mean()
+                                                row[col] = monthly_avg.get(month, xgb_data[col].mean())
+                                            else:
+                                                row[col] = 0
+                                        else:
+                                            row[col] = 0
+                                
+                                future_data.append(row)
+                                
+                                # Créer un DataFrame temporaire pour la prédiction
+                                temp_df = pd.DataFrame([row])
+                                
+                                # S'assurer que toutes les colonnes sont présentes
+                                for col in feature_columns:
+                                    if col not in temp_df.columns:
+                                        temp_df[col] = 0
+                                
+                                # Réorganiser les colonnes dans le bon ordre
+                                temp_df = temp_df[feature_columns]
+                                
+                                # Prédiction
+                                pred = xgb_model.predict(temp_df)[0]
+                                predictions_2023.append(max(0, pred))  # S'assurer que la prédiction n'est pas négative
+                            
+                            # Création du graphique XGBoost
+                            fig_xgb = go.Figure()
+                            
+                            # Données historiques
+                            hist_df_xgb = xgb_data.reset_index()
+                            fig_xgb.add_trace(go.Scatter(
+                                x=hist_df_xgb['date'],
+                                y=hist_df_xgb['accidents'],
+                                mode='lines+markers',
+                                name='Données historiques',
+                                line=dict(color='blue', width=2),
+                                marker=dict(size=4)
+                            ))
+                            
+                            # Prédictions 2023 XGBoost
+                            pred_df_xgb = pd.DataFrame({
+                                'date': future_dates,
+                                'accidents': predictions_2023
+                            })
+                            
+                            fig_xgb.add_trace(go.Scatter(
+                                x=pred_df_xgb['date'],
+                                y=pred_df_xgb['accidents'],
+                                mode='lines+markers',
+                                name='Prédictions 2023 (XGBoost)',
+                                line=dict(color='purple', width=3, dash='dash'),
+                                marker=dict(size=6)
+                            ))
+                            
+                            # Configuration du graphique
+                            fig_xgb.update_layout(
+                                title="Prédictions XGBoost - Accidents à Paris 2023",
+                                xaxis_title="Date",
+                                yaxis_title="Nombre d'accidents",
+                                height=600,
+                                hovermode='x unified'
+                            )
+                            
+                            # Affichage du graphique XGBoost
+                            st.plotly_chart(fig_xgb, use_container_width=True)
+                            
+                            # Importance des features
+                            feature_importance = pd.DataFrame({
+                                'feature': feature_columns,
+                                'importance': xgb_model.feature_importances_
+                            }).sort_values('importance', ascending=False)
+                            
+                            st.markdown("#### 📊 Importance des variables (XGBoost)")
+                            fig_importance = go.Figure()
+                            
+                            fig_importance.add_trace(go.Bar(
+                                x=feature_importance['importance'],
+                                y=feature_importance['feature'],
+                                orientation='h',
+                                marker_color='lightblue'
+                            ))
+                            
+                            fig_importance.update_layout(
+                                title="Importance des variables dans le modèle XGBoost",
+                                xaxis_title="Importance",
+                                yaxis_title="Variables",
+                                height=400
+                            )
+                            
+                            st.plotly_chart(fig_importance, use_container_width=True)
+                            
+                    except Exception as e:
+                        st.error(f"❌ Erreur lors de l'entraînement XGBoost : {str(e)}")
       
 
 

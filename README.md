@@ -2,6 +2,20 @@
 
 CV interactif développé avec Streamlit présentant mes projets de Data Science et Machine Learning.
 
+## 🔧 Corrections récentes (Décembre 2024)
+
+### ✅ Problèmes résolus
+- **Erreur de type** : Correction de l'erreur `unsupported operand type(s) for +: 'int' and 'str'` dans les prédictions SARIMA
+- **Graphiques de prédictions** : Amélioration de l'affichage des graphiques de prédictions SARIMA 2023
+- **Gestion d'erreur** : Ajout de messages d'erreur plus informatifs et de debugging détaillé
+- **Conversion de données** : Conversion explicite des données en entiers pour éviter les erreurs de type
+
+### 🛠️ Améliorations techniques
+- Conversion explicite `astype(int)` dans la fonction `load_accident_data()`
+- Vérifications de type avant les opérations mathématiques
+- Messages de debug détaillés pour diagnostiquer les problèmes
+- Gestion d'erreur robuste avec suggestions de résolution
+
 ## 🚀 Projets présentés
 
 ### 🚨 Analyse d'Accidentologie à Paris
